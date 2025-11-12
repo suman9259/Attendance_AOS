@@ -1,15 +1,76 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+# Gradle
+.gradle/
+*/build/
+build/
+
+# Local configuration (SDK path, signing, etc)
 local.properties
+
+# IntelliJ / Android Studio
+*.iml
+.idea/
+!.idea/codeStyles/
+!.idea/inspectionProfiles/
+!.idea/runConfigurations/
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/gradle.xml
+.idea/assetWizardSettings.xml
+.idea/dictionaries/
+.idea/libraries/
+.idea/jarRepositories.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/navEditor.xml
+.idea/vcs.xml
+.idea/caches/
+.idea/compiler.xml
+.idea/deploymentTargetSelector.xml
+
+# Keystore files
+*.jks
+*.keystore
+release.keystore
+debug.keystore
+
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Firebase / Google Services
+google-services.json
+GoogleService-Info.plist
+
+# Build outputs
+*.apk
+*.ap_
+*.aab
+bin/
+gen/
+out/
+release/
+
+# Logs and profiling
+*.log
+*.hprof
+
+# Native / C++
+.externalNativeBuild/
+.cxx/
+
+# Navigation and lint
+.navigation/
+lint-baseline.xml
+
+# Room schemas (optional)
+app/schemas/
+
+# Version control junk
+.svn/
+.hg/
+.git/
