@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Base configuration: No cleartext traffic allowed -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Production API -->
+<!--    <domain-config cleartextTrafficPermitted="false">-->
+<!--        <domain includeSubdomains="true">api.merilipi.com</domain>-->
+<!--        <domain includeSubdomains="true">merilipi.com</domain>-->
+<!--        <trust-anchors>-->
+<!--            <certificates src="system" />-->
+<!--        </trust-anchors>-->
+<!--    </domain-config>-->
+
+<!--    &lt;!&ndash; Agora RTC &ndash;&gt;-->
+<!--    <domain-config cleartextTrafficPermitted="false">-->
+<!--        <domain includeSubdomains="true">agora.io</domain>-->
+<!--        <domain includeSubdomains="true">agoraio.cn</domain>-->
+<!--        <domain includeSubdomains="true">edge.agora.io</domain>-->
+<!--        <trust-anchors>-->
+<!--            <certificates src="system" />-->
+<!--        </trust-anchors>-->
+<!--    </domain-config>-->
+
+<!--    &lt;!&ndash; Firebase &ndash;&gt;-->
+<!--    <domain-config cleartextTrafficPermitted="false">-->
+<!--        <domain includeSubdomains="true">firebaseapp.com</domain>-->
+<!--        <domain includeSubdomains="true">googleapis.com</domain>-->
+<!--        <domain includeSubdomains="true">google.com</domain>-->
+<!--        <trust-anchors>-->
+<!--            <certificates src="system" />-->
+<!--        </trust-anchors>-->
+<!--    </domain-config>-->
+
+<!--    &lt;!&ndash; Razorpay &ndash;&gt;-->
+<!--    <domain-config cleartextTrafficPermitted="false">-->
+<!--        <domain includeSubdomains="true">razorpay.com</domain>-->
+<!--        <trust-anchors>-->
+<!--            <certificates src="system" />-->
+<!--        </trust-anchors>-->
+<!--    </domain-config>-->
+
+<!--    &lt;!&ndash; Debug only: Allow user certificates for testing &ndash;&gt;-->
+<!--    <debug-overrides>-->
+<!--        <trust-anchors>-->
+<!--            <certificates src="system" />-->
+<!--            <certificates src="user" />-->
+<!--        </trust-anchors>-->
+<!--    </debug-overrides>-->
+</network-security-config>
