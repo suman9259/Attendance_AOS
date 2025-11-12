@@ -8,5 +8,21 @@ data class UserInfo(
     val fullNameEn: String,
     val firstNameAr: String,
     val token: String,
-    val theme: ThemeMode
+    val theme: ThemeMode,
+    val language: AppLanguage,
+    val isRTL: Boolean
 )
+
+enum class AppLanguage(val code: String) {
+    ENGLISH("en"),
+    ARABIC("ar");
+
+    companion object {
+        fun from(code: String?): AppLanguage {
+            return when (code?.lowercase()) {
+                "ar", "arabic" -> ARABIC
+                else -> ENGLISH
+            }
+        }
+    }
+}

@@ -16,9 +16,9 @@ import androidx.compose.ui.graphics.Color
 // ============================================
 
 // Primary Brand Colors (Yellow Theme)
-val BrandYellow = Color(0xFFFEDC00)        // Primary brand yellow
-val BrandYellowDark = Color(0xFFFFC107)    // Darker yellow for contrast
-val BrandYellowLight = Color(0xFFFFF59D)   // Soft light yellow
+val BrandYellow = Color(0xFFC3A355)        // Primary brand yellow
+val BrandYellowDark = Color(0xFFB6984F)    // Darker yellow for contrast
+val BrandYellowLight = Color(0xE2C3A355)   // Soft light yellow
 
 // Secondary Brand Colors (Red CTA)
 val BrandRed = Color(0xFFE53935)           // Bright red (buttons)

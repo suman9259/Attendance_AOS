@@ -6,12 +6,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.scharfesicht.attendencesystem.features.attendance.domain.model.AttendanceStrings
 import com.scharfesicht.attendencesystem.features.attendance.presentation.viewmodel.AttendanceTab
 
 @Composable
 fun AttendanceTabRow(
     selectedTab: AttendanceTab,
-    onTabSelected: (AttendanceTab) -> Unit
+    onTabSelected: (AttendanceTab) -> Unit,
+    isArabic: Boolean
 ) {
     TabRow(
         selectedTabIndex = selectedTab.ordinal,
@@ -24,7 +26,7 @@ fun AttendanceTabRow(
             onClick = { onTabSelected(AttendanceTab.MARK_ATTENDANCE) },
             text = {
                 Text(
-                    "mark attendance",
+                    AttendanceStrings.markAttendance.get(isArabic),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = if (selectedTab == AttendanceTab.MARK_ATTENDANCE)
                         FontWeight.Bold else FontWeight.Normal,
@@ -40,7 +42,7 @@ fun AttendanceTabRow(
             onClick = { onTabSelected(AttendanceTab.PERMISSION_APPLICATION) },
             text = {
                 Text(
-                    "permission application",
+                    AttendanceStrings.permissionApplication.get(isArabic),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = if (selectedTab == AttendanceTab.PERMISSION_APPLICATION)
                         FontWeight.Bold else FontWeight.Normal,

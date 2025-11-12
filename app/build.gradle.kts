@@ -59,7 +59,8 @@ android {
         create("production") {
             keyAlias = "KeyProd"
             keyPassword = "ProdPass"
-            storeFile = file("/Users/punlearn/AndroidStudioProjects/Attendance System/release.keystore") // Paste Exact path release keystore
+            storeFile = file("debug.keystore")
+//            storeFile = file("/Users/punlearn/AndroidStudioProjects/Attendance System/release.keystore") // Paste Exact path release keystore
             storePassword = "ProdPass"
         }
         /* create("production") {

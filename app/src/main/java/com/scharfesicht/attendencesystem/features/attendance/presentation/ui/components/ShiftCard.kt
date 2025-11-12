@@ -12,17 +12,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.scharfesicht.attendencesystem.features.attendance.domain.model.AttendanceRecord
-import com.scharfesicht.attendencesystem.features.attendance.domain.model.Shift
+import com.scharfesicht.attendencesystem.features.attendance.domain.model.*
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun ShiftCard(
-    shift: Shift,
-    todayAttendance: AttendanceRecord?,
+    shift: ShiftData,
     onPunchIn: () -> Unit,
     onPunchOut: () -> Unit,
-    loading: Boolean
+    loading: Boolean,
+    isArabic: Boolean
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -38,21 +38,25 @@ fun ShiftCard(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "your Assigned Shift",
+                text = AttendanceStrings.yourAssignedShift.get(isArabic),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
 
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = shift.name,
+                    text = if (isArabic) shift.shift_name_lang!! else shift.shift_name_lang!!,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium
                 )
+
+                val timeFormatter = DateTimeFormatter.ofPattern(
+                    "hh:mm a",
+                    if (isArabic) Locale("ar") else Locale.ENGLISH
+                )
+
                 Text(
-                    text = "${shift.startTime.format(DateTimeFormatter.ofPattern("hh:mm a"))} - ${
-                        shift.endTime.format(DateTimeFormatter.ofPattern("hh:mm a"))
-                    }",
+                    text = "${shift.start_date?.format(timeFormatter)} - ${shift.start_date?.format(timeFormatter)}",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -68,14 +72,14 @@ fun ShiftCard(
                 Button(
                     onClick = onPunchIn,
                     modifier = Modifier.weight(1f),
-                    enabled = !loading && todayAttendance?.punchInTime == null,
+                    enabled = true/*!loading && todayAttendance?.punchInTime == null*/,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF4CAF50),
                         disabledContainerColor = Color(0xFF4CAF50).copy(alpha = 0.5f)
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    if (loading && todayAttendance?.punchInTime == null) {
+                    if (/*loading && todayAttendance?.punchInTime == null*/true) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
                             color = Color.White
@@ -91,7 +95,7 @@ fun ShiftCard(
                                 contentDescription = "Punch In"
                             )
                             Text(
-                                "punch in",
+                                AttendanceStrings.punchIn.get(isArabic),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
@@ -103,14 +107,14 @@ fun ShiftCard(
                 Button(
                     onClick = onPunchOut,
                     modifier = Modifier.weight(1f),
-                    enabled = !loading && todayAttendance?.punchInTime != null && todayAttendance.punchOutTime == null,
+                    enabled = true/*!loading && todayAttendance?.punchInTime != null && todayAttendance.punchOutTime == null*/,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                         disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    if (loading && todayAttendance?.punchInTime != null) {
+                    if (/*loading && todayAttendance?.punchInTime != null*/true) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
                             color = Color.White
@@ -126,7 +130,7 @@ fun ShiftCard(
                                 contentDescription = "Punch Out"
                             )
                             Text(
-                                "punch out",
+                                AttendanceStrings.punchOut.get(isArabic),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
