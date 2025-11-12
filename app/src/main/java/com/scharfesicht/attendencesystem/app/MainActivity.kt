@@ -40,28 +40,55 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        Log.d(TAG, "═══════════════════════════════════")
-        Log.d(TAG, "MainActivity onCreate")
-        // ✅ DEV MODE: simulate Absher SDK
-        if (BuildConfig.DEBUG  && AttendanceSystemApp.absherHelper == null) {
-            Log.d(TAG, "⚙️ Dev environment detected — simulating Absher launch")
-            MiniAppEntryPoint.simulateLaunch(this)
-            finish()
-            return
-        }
-        isLaunchedFromSuperApp = intent?.getBooleanExtra(
-            MiniAppEntryPoint.EXTRA_LAUNCHED_FROM_SUPER_APP, false
-        ) ?: false
-
-        Log.d(TAG, "Launched from Super App: $isLaunchedFromSuperApp")
-
-        // Set Absher helper if passed by intent
-        tryGetAbsherHelperFromIntent()
-
         enableEdgeToEdge()
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        Log.d(TAG, "Activity created")
 
+        handleAbsherLaunch()
+    }
+
+    private fun handleAbsherLaunch() {
+        try {
+            // 🧠 Detect if launched from Super App
+            isLaunchedFromSuperApp = intent?.getBooleanExtra(
+                MiniAppEntryPoint.EXTRA_LAUNCHED_FROM_SUPER_APP, false
+            ) ?: false
+
+            Log.i(TAG, "Launch Source: ${if (isLaunchedFromSuperApp) "Super App" else "Standalone"}")
+
+            // ✅ Auto-mock in debug
+            if (BuildConfig.DEBUG && AttendanceSystemApp.absherHelper == null) {
+                Log.w(TAG, "Debug mode: simulating Absher SDK")
+                MiniAppEntryPoint.simulateLaunch(this)
+                finish()
+                return
+            }
+
+            setAbsherHelperFromIntent()
+            renderContent()
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Fatal Absher initialization failure", e)
+            // Optionally show an error screen or fallback UI
+        }
+    }
+
+    private fun setAbsherHelperFromIntent() {
+        if (AttendanceSystemApp.absherHelper != null) {
+            Log.d(TAG, "Absher helper already available")
+            return
+        }
+
+        val helper = intent?.extras?.get("absher_helper") as? IAbsherHelper
+        if (helper != null) {
+            AttendanceSystemApp.absherHelper = helper
+            Log.i(TAG, "✅ Absher helper received from Intent")
+        } else {
+            Log.w(TAG, "⚠️ No Absher helper in Intent - fallback to standalone mode")
+        }
+    }
+
+    private fun renderContent() {
         setContent {
             AttendanceSystemAppContent(
                 networkMonitor = networkMonitor,
@@ -72,33 +99,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun tryGetAbsherHelperFromIntent() {
-        if (AttendanceSystemApp.absherHelper != null) {
-            Log.d(TAG, "Absher helper already set, skipping Intent check")
-            return
-        }
-
-        try {
-            val helper = intent?.extras?.get("absher_helper") as? IAbsherHelper
-                ?: intent?.getSerializableExtra("absher_helper") as? IAbsherHelper
-
-            if (helper != null) {
-                AttendanceSystemApp.absherHelper = helper
-                Log.d(TAG, "✅ Absher helper received and set from Intent")
-            } else {
-                Log.d(TAG, "ℹ️ No Absher helper in Intent - running standalone")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error getting Absher helper", e)
-        }
-    }
-
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         this.intent = intent
-        tryGetAbsherHelperFromIntent()
+        setAbsherHelperFromIntent()
+
     }
 }
+
 
 
 
@@ -110,86 +118,33 @@ fun AttendanceSystemAppContent(
     isLaunchedFromSuperApp: Boolean,
     absherViewModel: AbsherViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 ) {
-    // Load Absher data if available
-    LaunchedEffect(isLaunchedFromSuperApp) {
-        val isAbsherEnabled = try {
-            absherRepository.isAbsherInitialized()
-        } catch (e: Exception) {
-            Log.e("AbsherAppLog", "Error checking Absher init", e)
-            false
-        }
+    val TAG = "AbsherAppUI"
 
-        Log.d("AbsherAppLog", "Absher enabled: $isAbsherEnabled")
-        Log.d("AbsherAppLog", "Launched from Super App: $isLaunchedFromSuperApp")
-
-        if (isAbsherEnabled) {
-            Log.d("AbsherAppLog", "Loading Absher user info...")
-            absherViewModel.loadUserInfo()
-        } else {
-            Log.d("AbsherAppLog", "Skipping Absher - not initialized or standalone mode")
-        }
-    }
-
-    // Get local theme preference
     val localThemeMode by preferenceStorage.themeMode.collectAsState(initial = "system")
     val dynamicColor by preferenceStorage.dynamicColor.collectAsState(initial = false)
-
-    // Get Absher user info for language and theme
     val absherUiState by absherViewModel.uiState.collectAsState()
 
-    // Determine language, theme, and RTL from Absher or defaults
-    val (language, themeMode, isRTL) = when (val state = absherUiState) {
-        is AbsherUiState.Success -> {
-            Log.d("AbsherAppLog", "✅ Using Absher theme and language")
-            Triple(
-                state.userInfo.language,
-                state.userInfo.theme.name.lowercase(),
-                state.userInfo.isRTL
-            )
-        }
-        is AbsherUiState.Loading -> {
-            Log.d("AbsherAppLog", "⏳ Loading Absher data...")
-            Triple(AppLanguage.ENGLISH, localThemeMode, false)
-        }
-        is AbsherUiState.Error -> {
-            Log.e("AbsherAppLog", "❌ Absher error: ${state.message}")
-            Triple(AppLanguage.ENGLISH, localThemeMode, false)
-        }
-        is AbsherUiState.NotInitialized -> {
-            Log.d("AbsherAppLog", "ℹ️ Absher not initialized - using defaults")
-            Triple(AppLanguage.ENGLISH, localThemeMode, false)
-        }
-        else -> {
-            // Check if Absher is available but not loaded yet
+    LaunchedEffect(isLaunchedFromSuperApp) {
+        runCatching {
             if (absherRepository.isAbsherInitialized()) {
-                Log.d("AbsherAppLog", "Absher initialized, attempting direct access")
-                // Try to get language and theme directly from repository
-                val lang = absherRepository.getCurrentLanguage().getOrNull()?.let {
-                    AppLanguage.from(it)
-                } ?: AppLanguage.ENGLISH
-
-                val theme = absherRepository.getCurrentTheme().getOrNull()?.lowercase()
-                    ?: localThemeMode
-
-                Triple(lang, theme, lang == AppLanguage.ARABIC)
+                absherViewModel.loadUserInfo()
+                Log.d(TAG, "Absher initialized — loading user info")
             } else {
-                Log.d("AbsherAppLog", "Using default theme and language")
-                Triple(AppLanguage.ENGLISH, localThemeMode, false)
+                Log.d(TAG, "Standalone mode — skipping Absher load")
             }
+        }.onFailure {
+            Log.e(TAG, "Error during Absher initialization", it)
         }
     }
 
-    Log.d("AbsherAppLog", "Final - Language: $language, Theme: $themeMode, RTL: $isRTL")
+    val (language, themeMode, isRTL) = when (val state = absherUiState) {
+        is AbsherUiState.Success -> Triple(state.userInfo.language, state.userInfo.theme.name.lowercase(), state.userInfo.isRTL)
+        is AbsherUiState.Error -> Triple(AppLanguage.ENGLISH, localThemeMode, false)
+        else -> Triple(AppLanguage.ENGLISH, localThemeMode, false)
+    }
 
-    // Apply theme and language
-    AttendanceSystemTheme(
-        themeMode = themeMode,
-        dynamicColor = dynamicColor
-    ) {
-        LocalizationProvider(
-            language = language,
-            isRTL = isRTL
-        ) {
+    AttendanceSystemTheme(themeMode = themeMode, dynamicColor = dynamicColor) {
+        LocalizationProvider(language = language, isRTL = isRTL) {
             Box(modifier = Modifier.fillMaxSize()) {
                 AppNavGraph(
                     isAbsherEnabled = absherRepository.isAbsherInitialized(),

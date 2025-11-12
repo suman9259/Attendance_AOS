@@ -212,6 +212,12 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.profileinstaller)
 
+    // Camera X
+    implementation("androidx.camera:camera-core:1.3.1")
+    implementation("androidx.camera:camera-camera2:1.3.1")
+    implementation("androidx.camera:camera-lifecycle:1.3.1")
+    implementation("androidx.camera:camera-view:1.3.1")
+
     // Jetpack Compose
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
@@ -259,6 +265,11 @@ dependencies {
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.ktor.client.logging)
     implementation(libs.ktor.client.content.negotiation)
+
+    // AWS Image Recognization
+    implementation("com.amazonaws:aws-android-sdk-core:2.73.0")
+    implementation("com.amazonaws:aws-android-sdk-rekognition:2.73.0")
+    implementation("com.amazonaws:aws-android-sdk-cognitoidentityprovider:2.73.0")
 
     // Retrofit & OkHttp
     implementation(libs.retrofit)

@@ -11,19 +11,26 @@ class AttendanceSystemApp : Application() {
     companion object {
         private const val TAG = "AttendanceSystemApp"
 
-        /**
-         * Absher helper instance set by Super App
-         * or manually for standalone testing.
-         */
         @Volatile
-        var absherHelper: IAbsherHelper? = null
-            set(value) {
-                field = value
-                Log.d(TAG, "Absher helper ${if (value != null) "SET ✅" else "CLEARED ⚠️"}")
-            }
+        private var _absherHelper: IAbsherHelper? = null
+
+        /**
+         * Safe global accessor for AbsherHelper.
+         * Automatically logs state for debugging & analytics.
+         */
+        var absherHelper: IAbsherHelper?
             get() {
-                Log.d(TAG, "Absher helper accessed: ${field != null}")
-                return field
+                if (BuildConfig.DEBUG) Log.d(TAG, "AbsherHelper accessed: ${_absherHelper != null}")
+                return _absherHelper
             }
+            set(value) {
+                _absherHelper = value
+                Log.i(TAG, "AbsherHelper ${if (value != null) "initialized ✅" else "cleared ⚠️"}")
+            }
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        Log.i(TAG, "AttendanceSystemApp initialized")
     }
 }
