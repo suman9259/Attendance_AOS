@@ -56,7 +56,7 @@ fun ShiftCard(
                 )
 
                 Text(
-                    text = "${shift.start_date?.format(timeFormatter)} - ${shift.start_date?.format(timeFormatter)}",
+                    text = "${shift.shift_rule?.get(0)!!.start_time?.format(timeFormatter)} - ${shift.shift_rule.get(0).end_time?.format(timeFormatter)}",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -79,7 +79,7 @@ fun ShiftCard(
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    if (/*loading && todayAttendance?.punchInTime == null*/true) {
+                    if (/*loading && todayAttendance?.punchInTime == null*/false) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
                             color = Color.White
@@ -114,7 +114,7 @@ fun ShiftCard(
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    if (/*loading && todayAttendance?.punchInTime != null*/true) {
+                    if (/*loading && todayAttendance?.punchInTime != null*/false) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
                             color = Color.White
