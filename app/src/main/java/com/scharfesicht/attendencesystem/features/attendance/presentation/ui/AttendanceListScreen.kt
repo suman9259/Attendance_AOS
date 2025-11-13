@@ -21,13 +21,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewModelScope
 import com.scharfesicht.attendencesystem.app.ui.componants.MainAppTopAppBar
+import com.scharfesicht.attendencesystem.features.attendance.presentation.viewmodel.AttendanceTab
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -165,6 +168,8 @@ fun AttendanceListScreen(
     isArabic: Boolean = false,
     onNavigateBack: () -> Unit = {}
 ) {
+    val selectTab by remember { mutableStateOf(AttendanceTab.MARK_ATTENDANCE) }
+
     // Provide RTL if needed
     CompositionLocalProvider(
         LocalLayoutDirection provides if (isArabic) LayoutDirection.Rtl else LayoutDirection.Ltr
@@ -200,25 +205,48 @@ fun AttendanceListScreen(
                     .padding(padding)
                     .fillMaxSize()
             ) {
-                // Tabs row
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TabTitle(isArabic = isArabic)
-                    // month + filter chip
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = { viewModel.refresh() }) {
-                            Icon(Icons.Default.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        }
-                        FilterChip(label = ui.month, onClick = { /* show month picker */ })
-                        Spacer(Modifier.width(8.dp))
-                        FilterChip(label = ui.filter, onClick = { /* show filter */ })
+                // Tab Row
+                AttendanceTabRow(
+                    selectedTab = selectTab,
+                    onTabSelected = {  },
+                    isArabic = isArabic
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                when (selectTab) {
+                    AttendanceTab.MARK_ATTENDANCE -> {
+//                        MarkAttendanceContent(
+//                            shift = state.shift,
+//                            onPunchIn = { onPunchIn },
+//                            onPunchOut = onPunchOut,
+//                            loading = punchInOutLoading,
+//                            isArabic = isArabic,
+//                        )
+                    }
+
+                    AttendanceTab.PERMISSION_APPLICATION -> {
+//                        PermissionApplicationContent(isArabic = isArabic)
                     }
                 }
+//                // Tabs row
+//                Row(
+//                    Modifier
+//                        .fillMaxWidth()
+//                        .padding(horizontal = 16.dp, vertical = 12.dp),
+//                    horizontalArrangement = Arrangement.SpaceBetween,
+//                    verticalAlignment = Alignment.CenterVertically
+//                ) {
+//                    TabTitle(isArabic = isArabic)
+//                    // month + filter chip
+//                    Row(verticalAlignment = Alignment.CenterVertically) {
+//                        IconButton(onClick = { viewModel.refresh() }) {
+//                            Icon(Icons.Default.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+//                        }
+//                        FilterChip(label = ui.month, onClick = { /* show month picker */ })
+//                        Spacer(Modifier.width(8.dp))
+//                        FilterChip(label = ui.filter, onClick = { /* show filter */ })
+//                    }
+//                }
 
                 // Column headings
                 Column(modifier = Modifier.padding(horizontal = 16.dp)) {
@@ -299,43 +327,6 @@ fun AttendanceListScreen(
         }
     }
 }
-
-@Composable
-private fun TopHeader(titleEn: String, titleAr: String, isArabic: Boolean, onBack: () -> Unit) {
-    Surface(
-        tonalElevation = 4.dp,
-        shadowElevation = 6.dp,
-        color = MaterialTheme.colorScheme.primary
-    ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 18.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // avatar icon placeholder
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.15f))
-                )
-
-                Spacer(Modifier.weight(1f))
-
-                Text(
-                    text = if (isArabic) titleAr else titleEn,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.align(Alignment.CenterVertically)
-                )
-            }
-        }
-    }
-}
-
 @Composable
 private fun TabTitle(isArabic: Boolean) {
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -380,7 +371,6 @@ private fun AttendanceRowItem(
     onPunchInClick: () -> Unit,
     onPunchOutClick: () -> Unit
 ) {
-    val bg = MaterialTheme.colorScheme.surfaceVariant
     Surface(
         shape = RoundedCornerShape(12.dp),
         tonalElevation = 2.dp,
@@ -393,47 +383,72 @@ private fun AttendanceRowItem(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // date chip
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(
+            /** DATE CHIP (FIXED) **/
+            Box(
+                modifier = Modifier
+                    .size(60.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
                     modifier = Modifier
-                        .size(60.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.primary)
+                        .fillMaxSize()
+                        .padding(4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = if (isArabic) row.dayNameAr else row.dayNameEn,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            fontWeight = FontWeight.SemiBold,
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = row.date.dayOfMonth.toString(),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    // Day Name
+                    Text(
+                        text = if (isArabic) row.dayNameAr else row.dayNameEn,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        fontSize = 11.sp,                      // FIXED SIZE
+                        maxLines = 1,                           // PREVENT OVERFLOW
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    // Date Number
+                    Text(
+                        text = row.date.dayOfMonth.toString(),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        fontSize = 16.sp,                      // FIXED SIZE
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
 
-            // punch in
+            /** PUNCH IN **/
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = row.punchIn ?: "----", color = if (row.punchIn != null) MaterialTheme.colorScheme.primary else Color.Gray)
+                Text(
+                    text = row.punchIn ?: "----",
+                    color = if (row.punchIn != null)
+                        MaterialTheme.colorScheme.primary
+                    else Color.Gray,
+                    fontSize = 14.sp
+                )
             }
 
-            // punch out
+            /** PUNCH OUT **/
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = row.punchOut ?: "----", color = if (row.punchOut != null) MaterialTheme.colorScheme.error else Color.Gray)
+                Text(
+                    text = row.punchOut ?: "----",
+                    color = if (row.punchOut != null)
+                        MaterialTheme.colorScheme.error
+                    else Color.Gray,
+                    fontSize = 14.sp
+                )
             }
 
-            // working hours
+            /** WORKING HOURS **/
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = row.workingHours ?: "----", color = MaterialTheme.colorScheme.onSurface)
+                Text(
+                    text = row.workingHours ?: "----",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp
+                )
             }
         }
     }
@@ -501,5 +516,40 @@ fun PreviewAttendanceLight() {
 fun PreviewAttendanceDarkArabic() {
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
         AttendanceListScreen(viewModel = remember { AttendanceListViewModel() }, isArabic = true)
+    }
+}
+
+// Add this sample row for previews
+private val previewRow = AttendanceRow(
+    id = "1",
+    date = LocalDate.of(2025, 4, 15),
+    dayNameAr = "الخميس",
+    dayNameEn = "Thursday",
+    punchIn = "09:15am",
+    punchOut = "05:45pm",
+    workingHours = "08h30m"
+)
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewRowItem() {
+    AttendanceRowItem(
+        row = previewRow,
+        isArabic = false,
+        onPunchInClick = {},
+        onPunchOutClick = {}
+    )
+}
+
+@Preview(showBackground = true, name = "Arabic RTL")
+@Composable
+fun PreviewRowItemArabic() {
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+        AttendanceRowItem(
+            row = previewRow,
+            isArabic = true,
+            onPunchInClick = {},
+            onPunchOutClick = {}
+        )
     }
 }
