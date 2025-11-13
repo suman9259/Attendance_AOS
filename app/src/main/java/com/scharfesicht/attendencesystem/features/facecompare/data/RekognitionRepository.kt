@@ -7,7 +7,6 @@ import com.amazonaws.regions.Regions
 import com.amazonaws.services.rekognition.AmazonRekognitionClient
 import com.amazonaws.services.rekognition.model.CompareFacesRequest
 import com.amazonaws.services.rekognition.model.Image
-import com.scharfesicht.attendencesystem.core.utils.normalizeUrl
 import com.scharfesicht.attendencesystem.features.facecompare.model.FaceCompareResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -22,21 +21,19 @@ class RekognitionRepository(
 ) {
 
     private fun getClient(): AmazonRekognitionClient {
-        val provider = CognitoCachingCredentialsProvider(appContext, identityPoolId, region)
+        val provider = CognitoCachingCredentialsProvider(
+            appContext,
+            identityPoolId,
+            region
+        )
         return AmazonRekognitionClient(provider)
     }
 
-    suspend fun compareFaces(
-        rawUrl: String,
-        newBitmap: Bitmap
-    ): FaceCompareResult = withContext(Dispatchers.IO) {
+    suspend fun compareFaces(oldImageUrl: String, newBitmap: Bitmap): FaceCompareResult =
+        withContext(Dispatchers.IO) {
 
-        val safeUrl = normalizeUrl(rawUrl)
-
-        try {
             val client = getClient()
-
-            val oldBytes = URL(safeUrl).openStream().readBytes()
+            val oldBytes = URL(oldImageUrl).openStream().readBytes()
             val newBytes = newBitmap.toJpegBytes()
 
             val request = CompareFacesRequest()
@@ -46,17 +43,15 @@ class RekognitionRepository(
 
             val result = client.compareFaces(request)
 
-            val bestMatch = result.faceMatches.maxByOrNull { it.similarity }
+            val match = result.faceMatches.maxByOrNull { it.similarity ?: 0f }
+            val similarity = match?.similarity ?: 0f
 
             return@withContext FaceCompareResult(
-                isSame = (bestMatch?.similarity ?: 0f) > 80f,
-                accuracy = bestMatch?.similarity ?: 0f,
+                isSame = similarity >= 80f,
+                accuracy = similarity
             )
-
-        } catch (e: Exception) {
-            throw Exception("Face comparison failed: ${e.message}")
         }
-    }
+
 
     private fun Bitmap.toJpegBytes(): ByteArray {
         val stream = ByteArrayOutputStream()

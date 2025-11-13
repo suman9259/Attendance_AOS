@@ -54,6 +54,17 @@ class AttendanceDashboardViewModel @Inject constructor(
 
     private val _appPreferences = MutableStateFlow(AppPreferences())
     val appPreferences: StateFlow<AppPreferences> = _appPreferences.asStateFlow()
+    private val _alert = MutableStateFlow<Pair<String, String>?>(null)
+    val alert: StateFlow<Pair<String, String>?> = _alert
+
+    fun showAlert(title: String, message: String) {
+        _alert.value = title to message
+    }
+
+    fun dismissAlert() {
+        _alert.value = null
+    }
+
 
     init {
         loadDashboardFlow()

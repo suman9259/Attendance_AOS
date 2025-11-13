@@ -6,9 +6,10 @@ import com.scharfesicht.attendencesystem.features.facecompare.model.FaceCompareR
 import javax.inject.Inject
 
 class FaceCompareUseCase @Inject constructor(
-    private val repo: RekognitionRepository
+    private val repository: RekognitionRepository
 ) {
     suspend operator fun invoke(oldImageUrl: String, newImage: Bitmap): FaceCompareResult {
-        return repo.compareFaces(oldImageUrl, newImage)
+        return repository.compareFaces(oldImageUrl, newImage)
     }
 }
+

@@ -79,7 +79,9 @@ fun FaceCompareScreen(
             Button(
                 onClick = {
                     if (newImage != null) {
-                        viewModel.compareFaces(oldImageUrl, newImage!!)
+
+                        viewModel.setOldImageUrl(oldImageUrl)
+                        viewModel.compareWithAws(newImage!!)
                     }
                 },
                 enabled = newImage != null
@@ -99,11 +101,11 @@ fun FaceCompareScreen(
                     val result = uiState as FaceCompareUiState.Success
 
                     Text(
-                        text = if (result.isSame)
+                        text = if (result.isSamePerson)
                             "✔ SAME PERSON\nAccuracy: ${"%.2f".format(result.accuracy)}%"
                         else
                             "❌ DIFFERENT PERSON\nAccuracy: ${"%.2f".format(result.accuracy)}%",
-                        color = if (result.isSame) MaterialTheme.colorScheme.primary
+                        color = if (result.isSamePerson) MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.titleLarge
                     )

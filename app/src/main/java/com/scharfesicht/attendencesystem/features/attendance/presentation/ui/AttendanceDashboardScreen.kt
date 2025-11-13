@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -22,120 +23,72 @@ import com.scharfesicht.attendencesystem.app.ui.theme.AttendanceSystemTheme
 import com.scharfesicht.attendencesystem.features.attendance.domain.model.*
 import com.scharfesicht.attendencesystem.features.attendance.presentation.ui.components.*
 import com.scharfesicht.attendencesystem.features.attendance.presentation.viewmodel.*
+import com.scharfesicht.attendencesystem.features.facecompare.presentation.ui.FaceVerifyScreen
 import com.scharfesicht.attendencesystem.features.facecompare.presentation.viewmodel.FaceCompareViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AttendanceDashboardScreen(
     viewModel: AttendanceDashboardViewModel = hiltViewModel(),
     absherViewModel: AbsherViewModel = hiltViewModel(),
-    isAbsherEnabled: Boolean,
-    faceCompareViewModel: FaceCompareViewModel
+    faceCompareViewModel: FaceCompareViewModel = hiltViewModel(),
+    isAbsherEnabled: Boolean
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val punchInOutLoading by viewModel.punchInOutLoading.collectAsState()
-    val showSuccessDialog by viewModel.showSuccessDialog.collectAsState()
-    val appPreferences by viewModel.appPreferences.collectAsState()
+    val punchLoading by viewModel.punchInOutLoading.collectAsState()
 
-    val isArabic = absherViewModel.getCurrentLanguage() != "en"
-    val isDark = absherViewModel.getCurrentTheme() != "light"
+    val context = LocalContext.current
+    val showFaceScreen = remember { mutableStateOf(false) }
+    val punchType = remember { mutableStateOf("") } // "IN" / "OUT"
 
-    // Handle LTR / RTL layout direction
-    CompositionLocalProvider(
-        LocalLayoutDirection provides if (isArabic) LayoutDirection.Rtl else LayoutDirection.Ltr
-    ) {
-        // Success Dialog
-        showSuccessDialog?.let { message ->
-            AlertDialog(
-                onDismissRequest = { viewModel.dismissSuccessDialog() },
-                title = {
-                    Text(if (isArabic) "نجاح" else "Success")
-                },
-                text = { Text(message) },
-                confirmButton = {
-                    TextButton(onClick = { viewModel.dismissSuccessDialog() }) {
-                        Text(if (isArabic) "حسنًا" else "OK")
+    // OLD IMAGE URL from login response
+    val oldImageUrl = "https://hrmpro.time-365.com/storage/images/profile/time-365_188264/537304871511132025095607691581079ddb1.jpg"
+    LaunchedEffect(oldImageUrl) {
+        faceCompareViewModel.setOldImageUrl(oldImageUrl)
+    }
+
+    // -------------------------
+    // FACE SCREEN RESULT HANDLER
+    // -------------------------
+    if (showFaceScreen.value) {
+        FaceVerifyScreen(
+            onResult = { isMatch, accuracy ->
+
+                showFaceScreen.value = false
+
+                if (isMatch) {
+                    if (punchType.value == "IN") {
+                        viewModel.punchIn()
+                    } else {
+                        viewModel.punchOut()
                     }
-                }
-            )
-        }
-
-        Scaffold(
-            topBar = {
-                MainAppTopAppBar(
-                    titleAr = "نظام الحضور والانصراف",
-                    titleEn = "Time Attendance",
-                    isArabic = isArabic,
-                    isDark = isDark,
-                )
-            }
-        ) { padding ->
-            when (val state = uiState) {
-                is AttendanceDashboardUiState.Loading -> {
-                    // SHIMMER LOADING STATE
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(padding)
-                            .verticalScroll(rememberScrollState())
-                            .background(MaterialTheme.colorScheme.surface)
-                    ) {
-                        // Tab Row (static during loading)
-                        AttendanceTabRow(
-                            selectedTab = AttendanceTab.MARK_ATTENDANCE,
-                            onTabSelected = {},
-                            isArabic = isArabic
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Shimmer Content
-                        AttendanceDashboardShimmer(
-                            isRtl = isArabic,
-                            isDark = isDark
-                        )
-                    }
-                }
-
-                is AttendanceDashboardUiState.Success -> {
-                    AttendanceDashboardContent(
-                        state = state,
-                        modifier = Modifier.padding(padding),
-                        onTabSelected = { viewModel.selectTab(it) },
-                        onPunchIn = { viewModel.punchIn() },
-                        onPunchOut = { viewModel.punchOut() },
-                        punchInOutLoading = punchInOutLoading,
-                        isArabic = isArabic,
+                } else {
+                    viewModel.showAlert(
+                        title = "Face Not Recognized",
+                        message = "Match score: $accuracy%\nTry again."
                     )
                 }
-
-                is AttendanceDashboardUiState.Error -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(padding),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            Text(
-                                text = state.message,
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Button(
-                                onClick = {  }
-                            ) {
-                                Text(if (isArabic) "إعادة المحاولة" else "Retry")
-                            }
-                        }
-                    }
-                }
             }
-        }
+        )
+        return
     }
+
+    // -------------------------
+    // MAIN DASHBOARD UI
+    // -------------------------
+    AttendanceDashboardContent(
+        state = uiState as? AttendanceDashboardUiState.Success ?: return,
+        onPunchIn = {
+            punchType.value = "IN"
+            showFaceScreen.value = true
+        },
+        onPunchOut = {
+            punchType.value = "OUT"
+            showFaceScreen.value = true
+        },
+        punchInOutLoading = punchLoading,
+        isArabic = absherViewModel.getCurrentLanguage() != "en",
+        onTabSelected = { AttendanceTab.MARK_ATTENDANCE },
+    )
 }
 
 @Composable
