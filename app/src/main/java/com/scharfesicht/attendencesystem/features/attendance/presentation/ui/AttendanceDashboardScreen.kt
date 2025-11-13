@@ -1,5 +1,6 @@
 package com.scharfesicht.attendencesystem.features.attendance.presentation.ui
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -21,13 +22,15 @@ import com.scharfesicht.attendencesystem.app.ui.theme.AttendanceSystemTheme
 import com.scharfesicht.attendencesystem.features.attendance.domain.model.*
 import com.scharfesicht.attendencesystem.features.attendance.presentation.ui.components.*
 import com.scharfesicht.attendencesystem.features.attendance.presentation.viewmodel.*
+import com.scharfesicht.attendencesystem.features.facecompare.presentation.viewmodel.FaceCompareViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AttendanceDashboardScreen(
     viewModel: AttendanceDashboardViewModel = hiltViewModel(),
     absherViewModel: AbsherViewModel = hiltViewModel(),
-    isAbsherEnabled: Boolean
+    isAbsherEnabled: Boolean,
+    faceCompareViewModel: FaceCompareViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val punchInOutLoading by viewModel.punchInOutLoading.collectAsState()
@@ -177,6 +180,7 @@ fun AttendanceDashboardContent(
     }
 }
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun AttendanceTabRow(
     selectedTab: AttendanceTab,

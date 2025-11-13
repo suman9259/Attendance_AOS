@@ -2,6 +2,7 @@ package com.scharfesicht.attendencesystem.app
 
 import android.app.Application
 import android.util.Log
+import com.scharfesicht.attendencesystem.BuildConfig
 import dagger.hilt.android.HiltAndroidApp
 import sa.gov.moi.absherinterior.core_logic.IAbsherHelper
 
