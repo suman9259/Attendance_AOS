@@ -1,6 +1,6 @@
 package com.scharfesicht.attendencesystem.core.localization
 
-import com.scharfesicht.attendencesystem.domain.absher.model.AppLanguage
+import com.scharfesicht.attendencesystem.core.utils.AppLanguage
 
 data class LocalizedStrings(
     val language: AppLanguage

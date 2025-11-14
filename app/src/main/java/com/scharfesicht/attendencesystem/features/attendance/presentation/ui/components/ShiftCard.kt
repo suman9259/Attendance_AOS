@@ -38,7 +38,7 @@ fun ShiftCard(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = AttendanceStrings.yourAssignedShift.get(isArabic),
+                text = "AttendanceStrings.yourAssignedShift.get(isArabic)",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
@@ -95,7 +95,7 @@ fun ShiftCard(
                                 contentDescription = "Punch In"
                             )
                             Text(
-                                AttendanceStrings.punchIn.get(isArabic),
+                                "AttendanceStrings.punchIn.get(isArabic)",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
@@ -130,7 +130,7 @@ fun ShiftCard(
                                 contentDescription = "Punch Out"
                             )
                             Text(
-                                AttendanceStrings.punchOut.get(isArabic),
+                               " AttendanceStrings.punchOut.get(isArabic)",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )

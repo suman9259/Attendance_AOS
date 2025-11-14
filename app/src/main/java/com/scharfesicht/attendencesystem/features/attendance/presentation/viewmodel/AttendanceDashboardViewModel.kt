@@ -1,205 +1,199 @@
 package com.scharfesicht.attendencesystem.features.attendance.presentation.viewmodel
 
-import android.util.Log
+import com.scharfesicht.attendencesystem.presentation.dashboard.AttendanceData
+
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.scharfesicht.attendencesystem.app.ui.theme.ThemeMode
-import com.scharfesicht.attendencesystem.core.network.TokenManager
-import com.scharfesicht.attendencesystem.domain.absher.model.AppLanguage
-import com.scharfesicht.attendencesystem.domain.absher.model.AppPreferences
-import com.scharfesicht.attendencesystem.domain.absher.model.UserInfo
-import com.scharfesicht.attendencesystem.domain.absher.usecase.GetUserInfoUseCase
-import com.scharfesicht.attendencesystem.features.attendance.domain.model.*
-import com.scharfesicht.attendencesystem.features.attendance.domain.usecase.LoginUseCase
-import com.scharfesicht.attendencesystem.features.attendance.domain.usecase.MarkAttendanceUseCase
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint
+import com.scharfesicht.attendencesystem.features.attendance.domain.repository.AttendanceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import retrofit2.HttpException
-import java.io.IOException
-import java.time.LocalTime
+import sa.gov.moi.absherinterior.utils.ScreenState
 import javax.inject.Inject
-
-sealed class AttendanceDashboardUiState {
-    object Loading : AttendanceDashboardUiState()
-    data class Success(
-        val shift: ShiftData?,
-        val userInfo: UserInfo,
-        val todayAttendance: AttendanceRecord?,
-        val selectedTab: AttendanceTab = AttendanceTab.MARK_ATTENDANCE,
-        val appPreferences: AppPreferences = AppPreferences()
-    ) : AttendanceDashboardUiState()
-    data class Error(val message: String) : AttendanceDashboardUiState()
-}
-
-enum class AttendanceTab { MARK_ATTENDANCE, PERMISSION_APPLICATION }
 
 @HiltViewModel
 class AttendanceDashboardViewModel @Inject constructor(
-    private val getUserInfoUseCase: GetUserInfoUseCase,
-//    private val apiService: AttendanceApiService,
-    private val loginUseCase: LoginUseCase,
-    private val markAttendanceUseCase: MarkAttendanceUseCase,
-    private val tokenManager: TokenManager
+    private val repository: AttendanceRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<AttendanceDashboardUiState>(AttendanceDashboardUiState.Loading)
-    val uiState: StateFlow<AttendanceDashboardUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(DashboardUiState())
+    val uiState: StateFlow<DashboardUiState> = _uiState
 
-    private val _punchInOutLoading = MutableStateFlow(false)
-    val punchInOutLoading: StateFlow<Boolean> = _punchInOutLoading.asStateFlow()
+    private val _selectedTab = MutableStateFlow(0)
+    val selectedTab: StateFlow<Int> = _selectedTab
 
-    private val _showSuccessDialog = MutableStateFlow<String?>(null)
-    val showSuccessDialog: StateFlow<String?> = _showSuccessDialog.asStateFlow()
-
-    private val _appPreferences = MutableStateFlow(AppPreferences())
-    val appPreferences: StateFlow<AppPreferences> = _appPreferences.asStateFlow()
-    private val _alert = MutableStateFlow<Pair<String, String>?>(null)
-    val alert: StateFlow<Pair<String, String>?> = _alert
-
-    fun showAlert(title: String, message: String) {
-        _alert.value = title to message
-    }
-
-    fun dismissAlert() {
-        _alert.value = null
-    }
-
+    private val _isDarkMode = MutableStateFlow(false)
+    val isDarkMode: StateFlow<Boolean> = _isDarkMode
 
     init {
-        loadDashboardFlow()
+        loadUserTheme()
+        loadAttendanceData()
     }
 
-    private fun loadDashboardFlow() {
+    private fun loadUserTheme() {
         viewModelScope.launch {
-            _uiState.value = AttendanceDashboardUiState.Loading
-
-            try {
-                // Step 1️⃣ — Try to get user info from Absher
-                val userInfo = try {
-                    getUserInfoUseCase().first().getOrThrow()
-                } catch (e: Exception) {
-                    // Step 2️⃣ — fallback to mock user if Absher not initialized
-                    Log.e("AbsharAppLog","Absher not initialized: ${e.message}")
-                    UserInfo(
-                        nationalId = "Dev01",
-                        fullNameEn = "John Doe",
-                        fullNameAr = "جون دو",
-                        token = "null",
-                        theme = ThemeMode.SYSTEM,
-                        language = AppLanguage.ENGLISH,
-                        isRTL = false,
-                        firstNameAr = "TODO()"
-                    )
-                }
-
-                _appPreferences.value = AppPreferences.fromAbsher(userInfo)
-
-                // Step 2: Call login API using Absher data
-                val loginResult = loginUseCase(
-                    LoginRequest(
-                    )
-                )
-
-                loginResult.fold(
-                    onSuccess = { response ->
-                        val loginData = response.data
-                        // Step 4️⃣ — Save token locally
-                        loginData?.token?.let { tokenManager.saveJwtToken(it) }
-
-                        if (loginData?.token != null) {
-                            tokenManager.saveJwtToken(loginData.token)
-                            _uiState.value = AttendanceDashboardUiState.Success(
-                                shift = loginData.shifts?.firstOrNull(),
-                                userInfo = userInfo,
-                                todayAttendance = null
-                            )
-                        } else {
-                            _uiState.value = AttendanceDashboardUiState.Error("Invalid login response")
-                        }
-                    },
-                    onFailure = { e ->
-                        _uiState.value = AttendanceDashboardUiState.Error("Login failed: ${e.message}")
-                    }
-                )
-
-
-
-//                // Step 5️⃣ — Fetch user shifts
-//                val shiftResponse = apiService.getUserShifts()
-//                val shift = if (shiftResponse.isSuccessful && !shiftResponse.body().isNullOrEmpty()) {
-//                    val s = shiftResponse.body()!!.first()
-//                    Shift(
-//                        id = s.id,
-//                        name = s.name,
-//                        nameAr = s.name_ar,
-//                        startTime = LocalTime.parse(s.start_time),
-//                        endTime = LocalTime.parse(s.end_time),
-//                        type = ShiftType.valueOf(s.type.uppercase())
-//                    )
-//                } else null
-
-//                // Step 6️⃣ — Show dashboard
-//                _uiState.value = AttendanceDashboardUiState.Success(
-//                    shift = shift,
-//                    userInfo = userInfo,
-//                    todayAttendance = null,
-//                    appPreferences = _appPreferences.value
-//                )
-
-            } catch (e: IOException) {
-                _uiState.value = AttendanceDashboardUiState.Error("Network error: ${e.message}")
-            } catch (e: HttpException) {
-                _uiState.value = AttendanceDashboardUiState.Error("Server error: ${e.code()}")
-            } catch (e: Exception) {
-                _uiState.value = AttendanceDashboardUiState.Error("Initialization failed: ${e.message}")
+            MiniAppEntryPoint.superData?.getCurrentTheme()?.data?.let { theme ->
+                _isDarkMode.value = theme == "dark"
             }
         }
     }
 
-
-    fun selectTab(tab: AttendanceTab) {
-        val current = _uiState.value
-        if (current is AttendanceDashboardUiState.Success) {
-            _uiState.value = current.copy(selectedTab = tab)
-        }
-    }
-
-    fun punchIn() {
+    private fun loadAttendanceData() {
         viewModelScope.launch {
-            _punchInOutLoading.value = true
-            markAttendanceUseCase.punchIn().fold(
-                onSuccess = {
-                    val prefs = _appPreferences.value
-                    _showSuccessDialog.value = AttendanceStrings.punchInSuccess.get(prefs.isArabic)
-                    loadDashboardFlow()
-                },
-                onFailure = {
-                    _showSuccessDialog.value = "Error: ${it.message}"
-                }
-            )
-            _punchInOutLoading.value = false
+            _uiState.value = _uiState.value.copy(screenState = ScreenState.Loading)
+
+            try {
+                val data = repository.getAttendanceData()
+                _uiState.value = _uiState.value.copy(
+                    screenState = ScreenState.Success(data),
+                    attendanceData = data
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    screenState = ScreenState.Error(e.message ?: "Unknown error"),
+                    errorMessage = e.message ?: "Failed to load attendance data"
+                )
+            }
         }
     }
 
-    fun punchOut() {
+    fun onTabChanged(tab: Int) {
+        _selectedTab.value = tab
+    }
+
+    fun onMonthChanged(month: String) {
+        _uiState.value = _uiState.value.copy(selectedMonth = month)
+        loadAttendanceData()
+    }
+
+    fun onPunchIn() {
         viewModelScope.launch {
-            _punchInOutLoading.value = true
-            markAttendanceUseCase.punchOut().fold(
-                onSuccess = {
-                    val prefs = _appPreferences.value
-                    _showSuccessDialog.value = AttendanceStrings.punchOutSuccess.get(prefs.isArabic)
-                    loadDashboardFlow()
-                },
-                onFailure = {
-                    _showSuccessDialog.value = "Error: ${it.message}"
+            _uiState.value = _uiState.value.copy(isLoading = true)
+
+            try {
+                // Get location
+                MiniAppEntryPoint.superData?.getLocation()?.data?.let { location ->
+                    // Check if location is within allowed area
+                    val isLocationValid = repository.validateLocation(location.latitude, location.longitude)
+
+                    if (isLocationValid) {
+                        // Trigger biometric authentication
+                        MiniAppEntryPoint.superData?.authenticateBiometric()?.data?.let { success ->
+                            if (success) {
+                                // Mark punch in
+                                val result = repository.punchIn(location.latitude, location.longitude)
+                                if (result) {
+                                    _uiState.value = _uiState.value.copy(
+                                        isLoading = false,
+                                        successMessage = "Punch in successful",
+                                        showSuccessToast = true
+                                    )
+                                    // Reload data
+                                    loadAttendanceData()
+                                } else {
+                                    _uiState.value = _uiState.value.copy(
+                                        isLoading = false,
+                                        errorMessage = "Failed to mark punch in",
+                                        showErrorToast = true
+                                    )
+                                }
+                            } else {
+                                _uiState.value = _uiState.value.copy(
+                                    isLoading = false,
+                                    errorMessage = "Biometric authentication failed",
+                                    showErrorToast = true
+                                )
+                            }
+                        }
+                    } else {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            errorMessage = "You are not in the allowed location",
+                            showErrorToast = true
+                        )
+                    }
                 }
-            )
-            _punchInOutLoading.value = false
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = e.message ?: "Failed to punch in",
+                    showErrorToast = true
+                )
+            }
         }
     }
 
-    fun dismissSuccessDialog() {
-        _showSuccessDialog.value = null
+    fun onPunchOut() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+
+            try {
+                // Get location
+                MiniAppEntryPoint.superData?.getLocation()?.data?.let { location ->
+                    val isLocationValid = repository.validateLocation(location.latitude, location.longitude)
+
+                    if (isLocationValid) {
+                        MiniAppEntryPoint.superData?.authenticateBiometric()?.data?.let { success ->
+                            if (success) {
+                                val result = repository.punchOut(location.latitude, location.longitude)
+                                if (result) {
+                                    _uiState.value = _uiState.value.copy(
+                                        isLoading = false,
+                                        successMessage = "Punch out successful",
+                                        showSuccessToast = true
+                                    )
+                                    loadAttendanceData()
+                                } else {
+                                    _uiState.value = _uiState.value.copy(
+                                        isLoading = false,
+                                        errorMessage = "Failed to mark punch out",
+                                        showErrorToast = true
+                                    )
+                                }
+                            } else {
+                                _uiState.value = _uiState.value.copy(
+                                    isLoading = false,
+                                    errorMessage = "Biometric authentication failed",
+                                    showErrorToast = true
+                                )
+                            }
+                        }
+                    } else {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            errorMessage = "You are not in the allowed location",
+                            showErrorToast = true
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = e.message ?: "Failed to punch out",
+                    showErrorToast = true
+                )
+            }
+        }
+    }
+
+    fun onToastShown() {
+        _uiState.value = _uiState.value.copy(
+            showSuccessToast = false,
+            showErrorToast = false
+        )
     }
 }
+
+data class DashboardUiState(
+    val screenState: ScreenState? = null,
+    val attendanceData: AttendanceData? = null,
+    val selectedMonth: String = "April",
+    val isLoading: Boolean = false,
+    val successMessage: String? = null,
+    val errorMessage: String? = null,
+    val showSuccessToast: Boolean = false,
+    val showErrorToast: Boolean = false
+)

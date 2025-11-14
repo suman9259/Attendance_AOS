@@ -8,7 +8,5 @@ import javax.inject.Inject
 class LoginUseCase @Inject constructor(
     private val repository: AttendanceRepository
 ) {
-    suspend operator fun invoke(request: LoginRequest): Result<LoginResponse> {
-        return repository.login(request)
-    }
+
 }

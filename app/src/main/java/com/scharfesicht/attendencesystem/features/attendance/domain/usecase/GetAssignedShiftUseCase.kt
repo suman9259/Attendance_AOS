@@ -8,7 +8,5 @@ import javax.inject.Inject
 class GetAssignedShiftUseCase @Inject constructor(
     private val repository: AttendanceRepository
 ) {
-    operator fun invoke(): Flow<Result<ShiftData>> {
-        return repository.getAssignedShift()
-    }
+
 }

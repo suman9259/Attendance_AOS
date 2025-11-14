@@ -1,4 +1,5 @@
 package com.scharfesicht.attendencesystem.features.attendance.presentation.ui.components
+/*
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -54,4 +55,4 @@ fun AttendanceTabRow(
             }
         )
     }
-}
+}*/

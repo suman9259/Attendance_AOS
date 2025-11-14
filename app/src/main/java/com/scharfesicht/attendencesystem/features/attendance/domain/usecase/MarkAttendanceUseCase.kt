@@ -7,11 +7,5 @@ import javax.inject.Inject
 class MarkAttendanceUseCase @Inject constructor(
     private val repository: AttendanceRepository
 ) {
-    suspend fun punchIn(location: String? = null): Result<AttendanceRecord> {
-        return repository.markPunchIn(location)
-    }
 
-    suspend fun punchOut(location: String? = null): Result<AttendanceRecord> {
-        return repository.markPunchOut(location)
-    }
 }

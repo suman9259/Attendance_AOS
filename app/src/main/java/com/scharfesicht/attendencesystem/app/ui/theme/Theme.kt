@@ -114,7 +114,6 @@ private val DarkColorScheme = darkColorScheme(
 @Composable
 fun AttendanceSystemTheme(
     themeMode: String = "system",
-    dynamicColor: Boolean = false, // Disabled by default to maintain brand colors
     content: @Composable () -> Unit
 ) {
     val systemInDarkTheme = isSystemInDarkTheme()
@@ -171,13 +170,11 @@ fun AttendanceSystemTheme(
 @Composable
 fun AttendanceSystemTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val themeMode = if (darkTheme) "dark" else "light"
     AttendanceSystemTheme(
         themeMode = themeMode,
-        dynamicColor = dynamicColor,
         content = content
     )
 }

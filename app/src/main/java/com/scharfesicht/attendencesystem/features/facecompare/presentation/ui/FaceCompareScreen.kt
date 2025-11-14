@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint
 import com.scharfesicht.attendencesystem.features.facecompare.presentation.viewmodel.*
 
 @Composable
@@ -26,6 +27,7 @@ fun FaceCompareScreen(
     var newImage by remember { mutableStateOf<Bitmap?>(null) }
 
     val context = LocalContext.current
+    val res = MiniAppEntryPoint.superData?.getCurrentTheme()?.data.toString()
 
     CameraPermission {
 
@@ -39,7 +41,7 @@ fun FaceCompareScreen(
         ) {
 
             Text(
-                "Face Compare (AWS Rekognition)",
+                "Face Compare (AWS Rekognition) - $res",
                 style = MaterialTheme.typography.titleLarge
             )
             Spacer(Modifier.height(20.dp))
