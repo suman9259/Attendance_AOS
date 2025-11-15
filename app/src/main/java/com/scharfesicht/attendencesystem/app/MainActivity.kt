@@ -11,26 +11,28 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
-import com.scharfesicht.attendencesystem.BuildConfig
+import androidx.lifecycle.lifecycleScope
 import com.scharfesicht.attendencesystem.app.navigation.AppNavGraph
 import com.scharfesicht.attendencesystem.app.ui.theme.AttendanceSystemTheme
 import com.scharfesicht.attendencesystem.core.datastore.IPreferenceStorage
 import com.scharfesicht.attendencesystem.core.localization.LocalizationProvider
+import com.scharfesicht.attendencesystem.core.network.TokenManager
 import com.scharfesicht.attendencesystem.core.network.interceptor.NetworkMonitor
 import com.scharfesicht.attendencesystem.core.utils.AppLanguage
 import dagger.hilt.android.AndroidEntryPoint
-import sa.gov.moi.absherinterior.core_logic.IAbsherHelper
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     companion object {
-        private const val TAG = "AbsherAppLog"
+        private const val TAG = "MainActivity"
     }
 
     @Inject lateinit var networkMonitor: NetworkMonitor
     @Inject lateinit var preferenceStorage: IPreferenceStorage
+    @Inject lateinit var tokenManager: TokenManager
 
     private var isLaunchedFromSuperApp = false
 
@@ -38,26 +40,23 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        Log.d(TAG, "Activity created")
+
+        // Check if launched from Absher
+        isLaunchedFromSuperApp = intent.getBooleanExtra("FROM_ABSHER", false) ||
+                MiniAppEntryPoint.isLaunchedFromAbsher()
+
+        Log.d(TAG, "Activity created. Launched from Absher: $isLaunchedFromSuperApp")
 
         setContent {
             AttendanceSystemApplicationContent(
                 networkMonitor = networkMonitor,
                 preferenceStorage = preferenceStorage,
                 isLaunchedFromSuperApp = isLaunchedFromSuperApp
-
             )
-            val id = MiniAppEntryPoint.superData?.getUserNationalID()?.data
-            val token = MiniAppEntryPoint.superData?.getUserToken()?.data
-
-            Log.e("Kuch Bhi Ho Sakta Hai", "Kuch Bhi Ho Sakta Hai $id and $token")
         }
     }
 
 }
-
-
-
 
 @Composable
 fun AttendanceSystemApplicationContent(
@@ -65,17 +64,29 @@ fun AttendanceSystemApplicationContent(
     preferenceStorage: IPreferenceStorage,
     isLaunchedFromSuperApp: Boolean,
 ) {
+    // Get theme and language from Absher or use defaults
+    val themeMode = MiniAppEntryPoint.superData?.getCurrentTheme()?.data ?: "light"
 
-    val themeMode : String = (MiniAppEntryPoint.superData?.getCurrentTheme()?.data?.firstOrNull() ?: "dark") as String
-    val language = MiniAppEntryPoint.superData?.getCurrentLanguage()?.data?.firstOrNull() ?: "en"
-    val isRTL = language != "en"
+    val language = remember {
+        if (isLaunchedFromSuperApp) {
+            MiniAppEntryPoint.superData?.getCurrentLanguage()?.data ?: "en"
+        } else {
+            "en"
+        }
+    }
 
+    val isRTL = language == "ar"
+
+    Log.d("AttendanceApp", "Theme: $themeMode, Language: $language, RTL: $isRTL")
 
     AttendanceSystemTheme(themeMode = themeMode) {
-        LocalizationProvider(language = AppLanguage.from(language.toString()), isRTL = isRTL) {
+        LocalizationProvider(
+            language = AppLanguage.from(language),
+            isRTL = isRTL
+        ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 AppNavGraph(
-                    isAbsherEnabled = false,
+                    isAbsherEnabled = isLaunchedFromSuperApp,
                     isLaunchedFromSuperApp = isLaunchedFromSuperApp
                 )
             }

@@ -51,3 +51,45 @@ class AuthInterceptor @Inject constructor(
         return chain.proceed(requestBuilder.build())
     }
 }
+
+/*
+class AuthInterceptor @Inject constructor(
+    private val tokenManager: TokenManager
+) : Interceptor {
+
+    companion object {
+        private const val TAG = "AuthInterceptor"
+        private const val HEADER_AUTHORIZATION = "Authorization"
+        private const val HEADER_ACCEPT = "Accept"
+        private const val HEADER_CONTENT_TYPE = "Content-Type"
+    }
+
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val original = chain.request()
+
+        // Skip auth for login endpoint
+        if (original.url.encodedPath.contains("/login")) {
+            Log.d(TAG, "Skipping auth for login endpoint")
+            return chain.proceed(original)
+        }
+
+        val token = tokenManager.getJwtToken()
+
+        val request = if (token != null && tokenManager.isTokenValid(token)) {
+            Log.d(TAG, "Adding auth token to request: ${original.url}")
+            original.newBuilder()
+                .header(HEADER_AUTHORIZATION, "Bearer $token")
+                .header(HEADER_ACCEPT, "application/json")
+                .header(HEADER_CONTENT_TYPE, "application/json")
+                .build()
+        } else {
+            Log.w(TAG, "No valid token available for request: ${original.url}")
+            original.newBuilder()
+                .header(HEADER_ACCEPT, "application/json")
+                .header(HEADER_CONTENT_TYPE, "application/json")
+                .build()
+        }
+
+        return chain.proceed(request)
+    }
+}*/

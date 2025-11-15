@@ -1,8 +1,7 @@
-package com.scharfesicht.attendencesystem.presentation.dashboard
+package com.scharfesicht.attendencesystem.features.attendance.presentation.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.*
@@ -10,23 +9,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.scharfesicht.attendencesystem.app.navigation.NavManager
 import sa.gov.moi.absherinterior.R
 import sa.gov.moi.absherinterior.components.*
 import sa.gov.moi.absherinterior.theme.base
 import sa.gov.moi.absherinterior.theme.small
-import sa.gov.moi.absherinterior.theme.xSmall
 import sa.gov.moi.absherinterior.utils.*
 import com.scharfesicht.attendencesystem.features.attendance.presentation.viewmodel.AttendanceDashboardViewModel
 import sa.gov.moi.absherinterior.models.AppMessage
-import sa.gov.moi.absherinterior.theme.AbsherInteriorTheme
+
 
 @Composable
 fun AttendanceDashboardScreen(
-    navController: NavController,
+    navManager: NavManager,
     viewModel: AttendanceDashboardViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -36,57 +36,21 @@ fun AttendanceDashboardScreen(
     MainScreenView(
         uiState = uiState.screenState,
         topBar = {
-            AbsherAppBarLarge(
+            AbsherAppBar(
                 showEventTheme = false,
-                appBarContent = {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        CustomIconButton(
-                            icon = R.drawable.ic_menu,
-                            onClick = { /* Open menu */ },
-                            tint = colorResource(R.color.header_fg_color)
-                        )
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = "stringResource(R.string.time_attendance)",
-                                style = Typography().base.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = colorResource(R.color.header_fg_color)
-                                )
-                            )
-                            CustomIconButton(
-                                icon = R.drawable.ic_arrow_right,
-                                onClick = { navController.navigateUp() },
-                                tint = colorResource(R.color.header_fg_color),
-                                iconSize = 18
-                            )
-                        }
-                    }
-                },
-                centerLogo = {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        SvgImageRender(
-                            url = "R.drawable.ic_moi_logo",
-                            imageSize = 64.dp,
-                            desc = "MOI Logo",
-                            imageType = ImageType.LOCAL
-                        )
-                    }
+//                title = stringResource(id = R.string.time_attendance), // "Time Attendance"
+                title = "Time Attendance", // "Time Attendance"
+                generalIcon = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_as_admin),
+//                        contentDescription = stringResource(id = R.string.time_attendance)
+                        contentDescription = "time attendance"
+                    )
                 }
             )
         },
         contentPadding = PaddingValues(AppPadding.NON.padding()),
-        message = uiState.errorMessage as AppMessage?,
+        message = uiState.errorMessage as? AppMessage,
         successComposable = {
             AttendanceDashboardContent(
                 selectedTab = selectedTab,
@@ -97,7 +61,7 @@ fun AttendanceDashboardScreen(
                 onPunchIn = viewModel::onPunchIn,
                 onPunchOut = viewModel::onPunchOut,
                 isDarkMode = isDarkMode,
-                navController = navController
+                navManager = navManager
             )
         }
     )
@@ -113,14 +77,14 @@ private fun AttendanceDashboardContent(
     onPunchIn: () -> Unit,
     onPunchOut: () -> Unit,
     isDarkMode: Boolean,
-    navController: NavController?
+    navManager: NavManager?
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 16.dp)
+
     ) {
-        // Tab Row
         CustomTabRow(
             selectedTabIndex = selectedTab,
             tabType = TabType.OUTLINED,
@@ -129,7 +93,8 @@ private fun AttendanceDashboardContent(
             tabs = {
                 CustomIndicatorTab(
                     isSelected = selectedTab == 0,
-                    tabTitle = "stringResource(R.string.mark_attendance)",
+//                    tabTitle = stringResource(R.string.mark_attendance),
+                    tabTitle = "mark attendance",
                     tabTitleStyle = Typography().small,
                     tabSelectedColor = colorResource(R.color.primary_main),
                     tabUnSelectedColor = colorResource(R.color.dark_gray_400),
@@ -137,7 +102,8 @@ private fun AttendanceDashboardContent(
                 )
                 CustomIndicatorTab(
                     isSelected = selectedTab == 1,
-                    tabTitle = "stringResource(R.string.permission_application)",
+//                    tabTitle = stringResource(R.string.permission_application),
+                    tabTitle = "permission application",
                     tabTitleStyle = Typography().small,
                     tabSelectedColor = colorResource(R.color.primary_main),
                     tabUnSelectedColor = colorResource(R.color.dark_gray_400),
@@ -148,114 +114,147 @@ private fun AttendanceDashboardContent(
 
         16.0.MOIVerticalSpacer()
 
-        when (selectedTab) {
-            0 -> navController?.let {
-                MarkAttendanceTab(
-                    attendanceData = attendanceData,
-                    selectedMonth = selectedMonth,
-                    onMonthChanged = onMonthChanged,
-                    onPunchIn = onPunchIn,
-                    onPunchOut = onPunchOut,
-                    isDarkMode = isDarkMode,
-                    navController = it
-                )
-            }
-            1 -> PermissionApplicationTab()
-        }
+        PunchInOutCard(
+//            shiftTitle = stringResource(R.string.your_assigned_shift),
+            shiftTitle = "Assign Shift",
+            shiftName = attendanceData?.shiftName ?: "--",
+            shiftTime = attendanceData?.shiftTime ?: "--",
+            onPunchIn = onPunchIn,
+            onPunchOut = onPunchOut
+        )
+
+        12.0.MOIVerticalSpacer()
+
+        // Optional: summary / other dashboard items can go here (kept minimal per request)
     }
 }
 
+/* Data classes for Dashboard */
+data class AttendanceData(
+    val upcomingHoliday: String,
+    val shiftName: String,
+    val shiftTime: String,
+    val summary: AttendanceSummary
+)
+
+data class AttendanceSummary(
+    val attendance: Int,
+    val lateLessThan1h: Int,
+    val lateMoreThan1h: Int,
+    val earlyPunchOut: Int,
+    val absence: Int
+)
+
+/* Punch In / Out Card */
 @Composable
-private fun MarkAttendanceTab(
-    attendanceData: AttendanceData?,
-    selectedMonth: String,
-    onMonthChanged: (String) -> Unit,
+fun PunchInOutCard(
+    modifier: Modifier = Modifier,
+    shiftTitle: String = "",
+    shiftName: String = "",
+    shiftTime: String = "",
     onPunchIn: () -> Unit,
     onPunchOut: () -> Unit,
-    isDarkMode: Boolean,
-    navController: NavController
+    isLoading: Boolean = false
 ) {
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Holiday Info Section
-        item {
-            ExpandableHolidayCard(
-                holidayDate = attendanceData?.upcomingHoliday ?: "OCT 12"
-            )
-        }
-
-        // Shift Info Section
-        item {
-            ShiftInfoSection(
-                shiftName = attendanceData?.shiftName ?: "standard Shift",
-                shiftTime = attendanceData?.shiftTime ?: "07:00 AM - 12:00 PM",
-                onPunchIn = onPunchIn,
-                onPunchOut = onPunchOut
-            )
-        }
-
-        // Attendance Summary
-        item {
-            AttendanceSummaryCard(
-                selectedMonth = selectedMonth,
-                onMonthChanged = onMonthChanged,
-                attendanceSummary = attendanceData?.summary,
-                isDarkMode = isDarkMode
-            )
-        }
-    }
-}
-
-@Composable
-private fun ExpandableHolidayCard(holidayDate: String) {
-    var isExpanded by remember { mutableStateOf(false) }
-
     MOICard(
-        cornerSize = CardSize.MEDIUM,
-        cardColor = colorResource(R.color.card_bg_color),
-        padding = PaddingValues(AppPadding.MEDIUM.padding()),
-        onCardClicked = { isExpanded = !isExpanded },
+        cornerSize = CardSize.LARGE,
         cardContent = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "stringResource(R.string.the_coming_holiday)",
+                    text = shiftTitle,
                     style = Typography().base.copy(fontWeight = FontWeight.Bold),
                     color = colorResource(R.color.content_fg_color)
                 )
-                CustomIconButton(
-                    icon = if (isExpanded) R.drawable.ic_arrow_up else R.drawable.ic_arrow_down,
-                    onClick = { isExpanded = !isExpanded },
-                    iconSize = 20,
-                    tint = colorResource(R.color.content_fg_color)
-                )
-            }
 
-            if (isExpanded) {
-                16.0.MOIVerticalSpacer()
+                4.0.MOIVerticalSpacer()
+
+                Text(
+                    text = shiftName,
+                    style = Typography().base.copy(fontWeight = FontWeight.Bold),
+                    color = colorResource(R.color.dark_gray_100)
+                )
+
+                Text(
+                    text = shiftTime,
+                    style = Typography().base.copy(fontWeight = FontWeight.Bold),
+                    color = colorResource(R.color.primary_main)
+                )
+
+                8.0.MOIVerticalSpacer()
+
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text(
-                        text = holidayDate.split(" ")[0],
-                        style = Typography().base.copy(fontWeight = FontWeight.Bold),
-                        color = colorResource(R.color.content_fg_color)
+                    // Punch In
+                    MOICard(
+                        modifier = Modifier.weight(1f),
+                        cornerSize = CardSize.MEDIUM,
+                        cardColor = colorResource(R.color.green_main),
+                        onCardClicked = onPunchIn,
+                        cardContent = {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp, horizontal = 4.dp)
+                            ) {
+                                CustomIconButton(
+                                    icon = R.drawable.ic_exit_app,
+                                    iconSize = 18,
+                                    tint = Color.White,
+                                    onClick = { /* kept intentionally empty - handled by card click */ },
+                                    showContainer = false
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+//                                    text = stringResource(R.string.punch_in),
+                                    text = "Punch In",
+                                    style = Typography().base.copy(fontWeight = FontWeight.Bold),
+                                    color = Color.White,
+                                    maxLines = 1
+                                )
+                            }
+                        }
                     )
-                    Box(
-                        modifier = Modifier
-                            .width(3.dp)
-                            .height(30.dp)
-                            .background(colorResource(R.color.primary_main))
-                    )
-                    Text(
-                        text = holidayDate.split(" ")[1],
-                        style = Typography().base.copy(fontWeight = FontWeight.Bold),
-                        color = colorResource(R.color.content_fg_color)
+
+                    // Punch Out
+                    MOICard(
+                        modifier = Modifier.weight(1f),
+                        cornerSize = CardSize.LARGE,
+                        cardColor = colorResource(R.color.primary_main),
+                        onCardClicked = onPunchOut,
+                        cardContent = {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp, horizontal = 4.dp)
+                            ) {
+                                CustomIconButton(
+                                    icon = R.drawable.ic_exit_app,
+                                    iconSize = 18,
+                                    tint = Color.White,
+                                    onClick = { /* kept intentionally empty - handled by card click */ },
+                                    showContainer = false
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+//                                    text = stringResource(R.string.punch_out),
+                                    text = "Punch Out",
+                                    style = Typography().base.copy(fontWeight = FontWeight.Bold),
+                                    color = Color.White,
+                                    maxLines = 1
+                                )
+                            }
+                        }
                     )
                 }
             }
@@ -263,277 +262,95 @@ private fun ExpandableHolidayCard(holidayDate: String) {
     )
 }
 
+/*
 @Composable
-private fun ShiftInfoSection(
-    shiftName: String,
-    shiftTime: String,
-    onPunchIn: () -> Unit,
-    onPunchOut: () -> Unit
+fun AttendanceDashboardScreen(
+    navController: NavController,
+    viewModel: AttendanceDashboardViewModel
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    val selectedTab by viewModel.selectedTab.collectAsState()
+    val isDarkMode by viewModel.isDarkMode.collectAsState()
+
+    MainScreenView(
+        uiState = uiState.screenState,
+        topBar = {
+            AbsherAppBar(
+                showEventTheme = false,
+//                title = "stringResource(R.string.attendance_dashboard)",
+                title = "Time Attendance",
+                generalIcon = { Icon(painter = painterResource(R.drawable.ic_as_admin), contentDescription = null) }
+            )
+        },
+        contentPadding = PaddingValues(AppPadding.NON.padding()),
+        message = uiState.errorMessage as AppMessage?,
+        successComposable = {
+//            AttendanceDashboardContent(
+//                selectedTab = selectedTab,
+//                onTabChanged = viewModel::onTabChanged,
+//                attendanceData = uiState.attendanceData,
+//                selectedMonth = uiState.selectedMonth,
+//                onMonthChanged = viewModel::onMonthChanged,
+//                onPunchIn = viewModel::onPunchIn,
+//                onPunchOut = viewModel::onPunchOut,
+//                isDarkMode = isDarkMode,
+//                navController = navController
+//            )
+        }
+    )
+}
+
+@Composable
+private fun AttendanceDashboardContent(
+//    selectedTab: Int,
+//    onTabChanged: (Int) -> Unit,
+//    attendanceData: AttendanceData?,
+//    selectedMonth: String,
+//    onMonthChanged: (String) -> Unit,
+//    onPunchIn: () -> Unit,
+//    onPunchOut: () -> Unit,
+//    isDarkMode: Boolean,
+//    navController: NavController?
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
     ) {
-        Text(
-            text = "stringResource(R.string.your_assigned_shift)",
-            style = Typography().base.copy(fontWeight = FontWeight.Bold),
-            color = colorResource(R.color.content_fg_color)
-        )
 
-        Text(
-            text = shiftName,
-            style = Typography().small,
-            color = colorResource(R.color.dark_gray_400)
-        )
-
-        Text(
-            text = shiftTime,
-            style = Typography().base.copy(fontWeight = FontWeight.Bold),
-            color = colorResource(R.color.primary_main)
+        CustomTabRow(
+            selectedTabIndex = 0,
+            tabType = TabType.OUTLINED,
+            backgroundColor = Color.Transparent,
+            indicatorColor = colorResource(R.color.primary_main),
+            tabs = {
+                CustomIndicatorTab(
+                    isSelected = true,
+//                    tabTitle = "stringResource(R.string.mark_attendance)",
+                    tabTitle = "Mark Attendance",
+                    tabTitleStyle = Typography().small,
+                    tabSelectedColor = colorResource(R.color.primary_main),
+                    tabUnSelectedColor = colorResource(R.color.dark_gray_400),
+                    onTabClick = {}
+                )
+                CustomIndicatorTab(
+                    isSelected = false,
+//                    tabTitle = "stringResource(R.string.permission_application)",
+                    tabTitle = "Permission Application",
+                    tabTitleStyle = Typography().small,
+                    tabSelectedColor = colorResource(R.color.primary_main),
+                    tabUnSelectedColor = colorResource(R.color.dark_gray_400),
+                    onTabClick = {  }
+                )
+            }
         )
 
         16.0.MOIVerticalSpacer()
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Punch In Button
-            CustomButton(
-                modifier = Modifier.weight(1f),
-                buttonTitle = "stringResource(R.string.punch_in)",
-                titleStyle = Typography().base,
-                titleColor = Color.White,
-//                buttonIcon = R.drawable.logo_primary,
-                buttonIcon = R.drawable.profile_off,
-                iconTint = Color.White,
-                buttonSize = ButtonSize.LARGE,
-                buttonType = ButtonType.SOLID,
-                buttonStyle = ButtonStyle.GREEN,
-                onClick = onPunchIn
-            )
-
-            // Punch Out Button
-            CustomButton(
-                modifier = Modifier.weight(1f),
-                buttonTitle = "stringResource(R.string.punch_out)",
-                titleStyle = Typography().base,
-                titleColor = Color.White,
-                buttonIcon = R.drawable.ic_exit_app,
-                iconTint = Color.White,
-                buttonSize = ButtonSize.LARGE,
-                buttonType = ButtonType.SOLID,
-                buttonStyle = ButtonStyle.PRIMARY,
-                onClick = onPunchOut
-            )
-        }
-    }
-}
-
-@Composable
-private fun AttendanceSummaryCard(
-    selectedMonth: String,
-    onMonthChanged: (String) -> Unit,
-    attendanceSummary: AttendanceSummary?,
-    isDarkMode: Boolean
-) {
-    MOICard(
-        cornerSize = CardSize.MEDIUM,
-        cardColor = colorResource(R.color.card_bg_color),
-        padding = PaddingValues(AppPadding.MEDIUM.padding()),
-        cardContent = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Header
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        CustomIconButton(
-                            icon = R.drawable.ic_menu,
-                            onClick = { },
-                            iconSize = 18,
-                            tint = colorResource(R.color.content_fg_color)
-                        )
-                        Text(
-                            text = "stringResource(R.string.attendance_summary)",
-                            style = Typography().base.copy(fontWeight = FontWeight.Bold),
-                            color = colorResource(R.color.content_fg_color)
-                        )
-                    }
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        // Month Dropdown
-                        LabeledDropdown(
-                            modifier = Modifier.width(120.dp),
-                            items = listOf("January", "February", "March", "April", "May"),
-                            hint = "stringResource(R.string.this_month)",
-                            selectedOption = selectedMonth,
-                            onSelection = { item, _ -> onMonthChanged(item) }
-                        )
-
-                        // View Type Dropdown
-                        LabeledDropdown(
-                            modifier = Modifier.width(100.dp),
-                            items = listOf("Days", "Hours"),
-                            hint = "Days",
-                            selectedOption = "Days",
-                            onSelection = { _, _ -> }
-                        )
-                    }
-                }
-
-                // Chart
-                AttendanceChart(
-                    summary = attendanceSummary,
-                    isDarkMode = isDarkMode
-                )
-            }
-        }
-    )
-}
-
-@Composable
-private fun AttendanceChart(
-    summary: AttendanceSummary?,
-    isDarkMode: Boolean
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(300.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Legend
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            ChartLegendItem(
-                color = colorResource(R.color.background),
-                label = "stringResource(R.string.attendance)"
-            )
-            ChartLegendItem(
-                color = colorResource(R.color.card_bg_color_with_opacity),
-                label = "stringResource(R.string.late_less_than_1h)"
-            )
-            ChartLegendItem(
-                color = colorResource(R.color.danger_main),
-                label = "stringResource(R.string.late_more_than_1h)"
-            )
-            ChartLegendItem(
-                color = colorResource(R.color.main_info_color),
-                label = "stringResource(R.string.early_punch_out)"
-            )
-            ChartLegendItem(
-                color = colorResource(R.color.dark_gray_100),
-                label = "stringResource(R.string.absence)"
-            )
-        }
-
-        // Bar Chart (Simplified representation)
-        Box(
-            modifier = Modifier
-                .weight(1.5f)
-                .fillMaxHeight()
-        ) {
-            // Y-axis labels
-            Column(
-                modifier = Modifier.fillMaxHeight(),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("16h", style = Typography().xSmall, color = colorResource(R.color.primary_main))
-                Text("12h", style = Typography().xSmall, color = colorResource(R.color.primary_main))
-                Text("8h", style = Typography().xSmall, color = colorResource(R.color.primary_main))
-                Text("4h", style = Typography().xSmall, color = colorResource(R.color.primary_main))
-                Text("0h", style = Typography().xSmall, color = colorResource(R.color.primary_main))
-            }
-
-            // Bars (simplified)
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(start = 40.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.Bottom
-            ) {
-                // This would be replaced with actual chart library
-                repeat(5) { index ->
-                    Column(
-                        modifier = Modifier
-                            .width(30.dp)
-                            .fillMaxHeight(0.6f + (index * 0.05f)),
-                        verticalArrangement = Arrangement.Bottom,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .width(24.dp)
-                                .weight(1f)
-                                .background(
-                                    when (index % 5) {
-                                        0 -> colorResource(R.color.primary_100)
-                                        1 -> colorResource(R.color.read_bg_color)
-                                        2 -> colorResource(R.color.danger_main)
-                                        3 -> colorResource(R.color.main_info_color)
-                                        else -> colorResource(R.color.dark_gray_100)
-                                    }
-                                )
-                        )
-                    }
-                }
-            }
-
-            // X-axis label
-            Text(
-                text = "April",
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(top = 8.dp),
-                style = Typography().small.copy(fontWeight = FontWeight.Bold),
-                color = colorResource(R.color.content_fg_color)
-            )
-        }
-    }
-}
-
-@Composable
-private fun ChartLegendItem(color: Color, label: String) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(12.dp)
-                .background(color, shape = androidx.compose.foundation.shape.CircleShape)
+        PunchInOutCard(
+            onPunchIn = {},
+            onPunchOut = {}
         )
-        Text(
-            text = label,
-            style = Typography().xSmall,
-            color = colorResource(R.color.content_fg_color)
-        )
-    }
-}
 
-@Composable
-private fun PermissionApplicationTab() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "Permission Application",
-            style = Typography().base,
-            color = colorResource(R.color.content_fg_color)
-        )
     }
 }
 
@@ -570,17 +387,6 @@ fun PreviewAttendanceDashboardLight() {
     }
 }
 
-@Preview(
-    name = "Dashboard - Dark Mode",
-    showBackground = true,
-    showSystemUi = true
-)
-@Composable
-fun PreviewAttendanceDashboardDark() {
-    AbsherInteriorTheme() {
-        AttendanceDashboardPreview(isDarkMode = true)
-    }
-}
 
 @Composable
 private fun AttendanceDashboardPreview(isDarkMode: Boolean) {
@@ -599,25 +405,156 @@ private fun AttendanceDashboardPreview(isDarkMode: Boolean) {
         )
     )
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Mock AppBar
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .background(colorResource(R.color.header_bg_color))
-        )
+    MainScreenView(
+        uiState = ScreenState.Success(data = "Success"),
+        topBar = {
+            AbsherAppBar(
+                showEventTheme = false,
+//                title = "stringResource(R.string.attendance_dashboard)",
+                title = "Time Attendance",
+                generalIcon = {
+                    Icon(painter = painterResource(R.drawable.ic_as_admin),
+                        contentDescription = null
+                    )
+                }
+            )
+        },
+        contentPadding = PaddingValues(AppPadding.NON.padding()),
+        message = null,
+        successComposable = {
+            AttendanceDashboardContent(
+//                selectedTab = selectedTab,
+//                onTabChanged = viewModel::onTabChanged,
+//                attendanceData = uiState.attendanceData,
+//                selectedMonth = uiState.selectedMonth,
+//                onMonthChanged = viewModel::onMonthChanged,
+//                onPunchIn = viewModel::onPunchIn,
+//                onPunchOut = viewModel::onPunchOut,
+//                isDarkMode = isDarkMode,
+//                navController = navController
+            )
+        }
+    )
 
-        AttendanceDashboardContent(
-            selectedTab = selectedTab,
-            onTabChanged = { selectedTab = it },
-            attendanceData = mockAttendanceData,
-            selectedMonth = "April",
-            onMonthChanged = {},
-            onPunchIn = {},
-            onPunchOut = {},
-            isDarkMode = isDarkMode,
-            navController = null // Not needed for preview
-        )
-    }
 }
+
+
+@Composable
+fun PunchInOutCard(
+    modifier: Modifier = Modifier,
+    shiftTitle: String = "your Assigned Shift",
+    shiftName: String = "standard Shift",
+    shiftTime: String = "07:00 AM - 12:00 PM",
+    onPunchIn: () -> Unit,
+    onPunchOut: () -> Unit,
+    isLoading: Boolean = false
+) {
+
+    MOICard(
+            cornerSize = CardSize.LARGE,
+            cardContent = {
+                Column(
+                    modifier = modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(9.dp)
+                ) {
+                    // Title - "your Assigned Shift"
+                    Text(
+                        text = shiftTitle,
+                        style = Typography().base.copy(fontWeight = FontWeight.Bold),
+                        color = colorResource(R.color.content_fg_color)
+                    )
+
+                    1.0.MOIVerticalSpacer()
+
+                    // Shift Name - "standard Shift"
+                    Text(
+                        text = shiftName,
+                        style = Typography().base.copy(fontWeight = FontWeight.Bold),
+                        color = colorResource(R.color.dark_gray_100)
+                    )
+
+                    // Shift Time - "07:00 AM - 12:00 PM" (Gold color)
+                    Text(
+                        text = shiftTime,
+                        style = Typography().base.copy(fontWeight = FontWeight.Bold),
+                        color = colorResource(R.color.primary_main)
+                    )
+
+//                    12.0.MOIVerticalSpacer()
+
+                    // Buttons Row
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // Punch In Card
+                        MOICard(
+                            modifier = Modifier.weight(1f),
+                            cornerSize = CardSize.MEDIUM,
+                            cardColor = colorResource(R.color.green_main),
+                            onCardClicked = onPunchIn,
+                            cardContent = {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center,
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 7.dp, horizontal = 2.dp)
+                                ) {
+                                    CustomIconButton(
+                                        icon = R.drawable.ic_exit_app,
+                                        iconSize = 18,
+                                        tint = Color.White,
+                                        onClick = { },
+                                        showContainer = false
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "punch in",
+                                        style = Typography().base.copy(fontWeight = FontWeight.Bold),
+                                        color = Color.White,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+                        )
+
+                        // Punch Out Card
+                        MOICard(
+                            modifier = Modifier.weight(1f),
+                            cornerSize = CardSize.LARGE,
+                            cardColor = colorResource(R.color.primary_main),
+                            cardContent = {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center,
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 7.dp, horizontal = 2.dp)
+                                ) {
+                                    CustomIconButton(
+                                        icon = R.drawable.ic_exit_app,
+                                        // TODO: Change Image Icon because same is not available in sdk.
+                                        iconSize = 18,
+                                        tint = Color.White,
+                                        onClick = { },
+                                        showContainer = false
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "punch out",
+                                        style = Typography().base.copy(fontWeight = FontWeight.Bold),
+                                        color = Color.White
+                                    )
+                                }
+                            }
+                        )
+                    }
+//
+                }
+            }
+    )
+}
+
+
+
+*/

@@ -127,3 +127,50 @@ class TokenManager @Inject constructor(
         return parts.size == 3
     }
 }
+/*
+
+@Singleton
+class TokenManager @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
+    private val masterKey = MasterKey.Builder(context)
+        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+        .build()
+
+    private val sharedPreferences = EncryptedSharedPreferences.create(
+        context,
+        "attendance_secure_prefs",
+        masterKey,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+    )
+
+    fun saveToken(token: String) {
+        sharedPreferences.edit().putString(KEY_TOKEN, token).apply()
+    }
+
+    fun getToken(): String? {
+        return sharedPreferences.getString(KEY_TOKEN, null)
+    }
+
+    fun saveRefreshToken(refreshToken: String) {
+        sharedPreferences.edit().putString(KEY_REFRESH_TOKEN, refreshToken).apply()
+    }
+
+    fun getRefreshToken(): String? {
+        return sharedPreferences.getString(KEY_REFRESH_TOKEN, null)
+    }
+
+    fun clearTokens() {
+        sharedPreferences.edit().clear().apply()
+    }
+
+    fun isLoggedIn(): Boolean {
+        return getToken() != null
+    }
+
+    companion object {
+        private const val KEY_TOKEN = "auth_token"
+        private const val KEY_REFRESH_TOKEN = "refresh_token"
+    }
+}*/
