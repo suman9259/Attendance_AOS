@@ -21,6 +21,7 @@ import com.scharfesicht.attendencesystem.core.network.interceptor.NetworkMonitor
 import com.scharfesicht.attendencesystem.core.utils.AppLanguage
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import sa.gov.moi.absherinterior.theme.AbsherInteriorTheme
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -79,7 +80,7 @@ fun AttendanceSystemApplicationContent(
 
     Log.d("AttendanceApp", "Theme: $themeMode, Language: $language, RTL: $isRTL")
 
-    AttendanceSystemTheme(themeMode = themeMode) {
+    AbsherInteriorTheme(){
         LocalizationProvider(
             language = AppLanguage.from(language),
             isRTL = isRTL

@@ -18,7 +18,7 @@ import com.scharfesicht.attendencesystem.features.facecompare.presentation.viewm
 
 @Composable
 fun FaceVerifyScreen(
-    onResult: (Boolean, Float) -> Unit,
+//    onResult: (Boolean, Float) -> Unit,
     viewModel: FaceCompareViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -64,7 +64,7 @@ fun FaceVerifyScreen(
                 FaceMatchResult(
                     isMatch = data.isSamePerson,
                     accuracy = data.accuracy,
-                    onDone = { onResult(data.isSamePerson, data.accuracy) }
+                    onDone = { /*onResult(data.isSamePerson, data.accuracy)*/ }
                 )
             }
 
@@ -76,7 +76,7 @@ fun FaceVerifyScreen(
 //                        viewModel.resetState()
                     },
                     onCancel = {
-                        onResult(false, 0f)
+//                        onResult(false, 0f)
                     }
                 )
             }

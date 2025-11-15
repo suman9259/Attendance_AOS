@@ -13,11 +13,14 @@ import com.scharfesicht.attendencesystem.features.attendance.presentation.ui.Att
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import sa.gov.moi.absherinterior.models.AppMessage
 import sa.gov.moi.absherinterior.utils.ScreenState
 import javax.inject.Inject
+import kotlin.random.Random
 
 @HiltViewModel
 class AttendanceDashboardViewModel @Inject constructor(
+    private val loginUseCase: LoginUseCase,
     private val checkInUseCase: CheckInUseCase,
     private val checkOutUseCase: CheckOutUseCase,
     private val getLatestRecordUseCase: GetLatestRecordUseCase,
@@ -44,8 +47,9 @@ class AttendanceDashboardViewModel @Inject constructor(
 
     init {
         loadUserTheme()
-        loadUserShifts()
-        loadLatestRecord()
+        onLoginClick()
+//        loadUserShifts()
+//        loadLatestRecord()
     }
 
     private fun loadUserTheme() {
@@ -57,7 +61,7 @@ class AttendanceDashboardViewModel @Inject constructor(
     }
 
     private fun loadUserShifts() {
-        viewModelScope.launch {
+        /*viewModelScope.launch {
             getUserShiftsUseCase().collect { result ->
                 when (result) {
                     is NetworkResult.Loading -> {
@@ -108,11 +112,11 @@ class AttendanceDashboardViewModel @Inject constructor(
                     }
                 }
             }
-        }
+        }*/
     }
 
     private fun loadLatestRecord() {
-        viewModelScope.launch {
+        /*viewModelScope.launch {
             getLatestRecordUseCase().collect { result ->
                 when (result) {
                     is NetworkResult.Loading -> {
@@ -131,7 +135,7 @@ class AttendanceDashboardViewModel @Inject constructor(
                     }
                 }
             }
-        }
+        }*/
     }
 
     fun onTabChanged(tab: Int) {
@@ -145,68 +149,83 @@ class AttendanceDashboardViewModel @Inject constructor(
     fun onPunchIn() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-
-            try {
-                // Get location from Absher
-                val location = MiniAppEntryPoint.superData?.getLocation()?.data
-                if (location == null) {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        errorMessage = "Failed to get location",
-                        showErrorToast = true
-                    )
-                    return@launch
-                }
-
-                // Trigger biometric
-                val bioSuccess = MiniAppEntryPoint.superData?.authenticateBiometric()?.data
-                if (bioSuccess != true) {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        errorMessage = "Biometric authentication failed",
-                        showErrorToast = true
-                    )
-                    return@launch
-                }
-
-                // Call check-in API
-                checkInUseCase(
-                    latitude = location.latitude,
-                    longitude = location.longitude,
-                    shiftIndex = 0
-                ).collect { result ->
-                    when (result) {
-                        is NetworkResult.Loading -> {
-                            // Already showing loading
-                        }
-                        is NetworkResult.Success -> {
-                            _uiState.value = _uiState.value.copy(
-                                isLoading = false,
-                                successMessage = "Punch in successful",
-                                showSuccessToast = true,
-                                latestRecord = result.data,
-                                isCheckedIn = true
-                            )
-                            Log.d(TAG, "Check-in successful: ${result.data.uuid}")
-                        }
-                        is NetworkResult.Error -> {
-                            _uiState.value = _uiState.value.copy(
-                                isLoading = false,
-                                errorMessage = result.error.message,
-                                showErrorToast = true
-                            )
-                            Log.e(TAG, "Check-in failed: ${result.error.message}")
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = e.message ?: "Failed to punch in",
-                    showErrorToast = true
-                )
-                Log.e(TAG, "Punch in error", e)
-            }
+//            try {
+//                // Get location from Absher
+//                val location = MiniAppEntryPoint.superData?.getLocation()?.data
+//                if (location == null) {
+//                    _uiState.value = _uiState.value.copy(
+//                        isLoading = false,
+//                        errorMessage = AppMessage.Error(
+//                            message = "Failed to get location",
+//                            messageKey = "error_message"
+//                        ),
+//                        showErrorToast = true
+//                    )
+//                    return@launch
+//                }
+//
+//                // Trigger biometric
+//                val bioSuccess = MiniAppEntryPoint.superData?.authenticateBiometric()?.data
+//                if (bioSuccess != true) {
+//                    _uiState.value = _uiState.value.copy(
+//                        isLoading = false,
+//                        errorMessage = AppMessage.Error(
+//                            message = "Biometric authentication failed",
+//                            messageKey = "error_message"
+//                        ),
+//                        showErrorToast = true
+//                    )
+//                    return@launch
+//                }
+//
+//                // Call check-in API
+//                checkInUseCase(
+//                    latitude = location.latitude,
+//                    longitude = location.longitude,
+//                    shiftIndex = 0
+//                ).collect { result ->
+//                    when (result) {
+//                        is NetworkResult.Loading -> {
+//                            // Already showing loading
+//                        }
+//                        is NetworkResult.Success -> {
+//                            _uiState.value = _uiState.value.copy(
+//                                isLoading = false,
+//                                successMessage = "Punch in successful",
+//                                showSuccessToast = true,
+////                                latestRecord = result.data,
+//                                isCheckedIn = true
+//                            )
+//                            Log.d(TAG, "Check-in successful: ${result.data.uuid}")
+//                        }
+//                        is NetworkResult.Error -> {
+//                            _uiState.value = _uiState.value.copy(
+//                                isLoading = false,
+//                                errorMessage = result.error.message.let {
+//                                    AppMessage.Error(
+//                                        message = it,
+//                                        messageKey = "error_message"
+//                                    )
+//                                },
+//                                showErrorToast = true
+//                            )
+//                            Log.e(TAG, "Check-in failed: ${result.error.message}")
+//                        }
+//                    }
+//                }
+//            } catch (e: Exception) {
+//                _uiState.value = _uiState.value.copy(
+//                    isLoading = false,
+//                    errorMessage = e.message?.let {
+//                        AppMessage.Error(
+//                            message = it,
+//                            messageKey = "error_message"
+//                        )
+//                    },
+//                    showErrorToast = true
+//                )
+//                Log.e(TAG, "Punch in error", e)
+//            }
         }
     }
 
@@ -220,7 +239,10 @@ class AttendanceDashboardViewModel @Inject constructor(
                 if (location == null) {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        errorMessage = "Failed to get location",
+                        errorMessage = AppMessage.Error(
+                            message = "Failed to get location",
+                            messageKey = "error_message"
+                        ),
                         showErrorToast = true
                     )
                     return@launch
@@ -231,7 +253,10 @@ class AttendanceDashboardViewModel @Inject constructor(
                 if (bioSuccess != true) {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        errorMessage = "Biometric authentication failed",
+                        errorMessage = AppMessage.Error(
+                            message = "Biometric authentication failed",
+                            messageKey = "error_message"
+                        ),
                         showErrorToast = true
                     )
                     return@launch
@@ -252,7 +277,7 @@ class AttendanceDashboardViewModel @Inject constructor(
                                 isLoading = false,
                                 successMessage = "Punch out successful",
                                 showSuccessToast = true,
-                                latestRecord = result.data,
+//                                latestRecord = result.data,
                                 isCheckedIn = false
                             )
                             Log.d(TAG, "Check-out successful: ${result.data.uuid}")
@@ -260,7 +285,12 @@ class AttendanceDashboardViewModel @Inject constructor(
                         is NetworkResult.Error -> {
                             _uiState.value = _uiState.value.copy(
                                 isLoading = false,
-                                errorMessage = result.error.message,
+                                errorMessage = result.error.message.let {
+                                    AppMessage.Error(
+                                        message = it,
+                                        messageKey = "error_message"
+                                    )
+                                },
                                 showErrorToast = true
                             )
                             Log.e(TAG, "Check-out failed: ${result.error.message}")
@@ -270,7 +300,12 @@ class AttendanceDashboardViewModel @Inject constructor(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = e.message ?: "Failed to punch out",
+                    errorMessage = e.message?.let {
+                        AppMessage.Error(
+                            message = it,
+                            messageKey = "error_message"
+                        )
+                    },
                     showErrorToast = true
                 )
                 Log.e(TAG, "Punch out error", e)
@@ -304,13 +339,84 @@ class AttendanceDashboardViewModel @Inject constructor(
         }
     }
 
+    private fun onLoginClick() {
+        if (!validateInputs()) return
+
+        viewModelScope.launch {
+            loginUseCase(
+                username = "rahul_kumar_1999",
+                password = "Rahul@1321",
+                deviceToken = Random.nextInt(1,999999).toString()
+            ).collect { result ->
+                when (result) {
+                    is NetworkResult.Loading -> {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = true,
+                            errorMessage = null
+                        )
+                    }
+                    is NetworkResult.Success -> {
+                        // Save token
+                        tokenManager.saveJwtToken(result.data.token)
+                        _uiState.value = _uiState.value.copy(
+                            currentShift = result.data.shifts[0],
+                            isLoading = false,
+                            successMessage = null,
+                            showSuccessToast = true,
+//                                latestRecord = result.data,
+                            isCheckedIn = true
+                        )
+//                        result.data.shifts[0].shift_rule[0].start_time
+//                        result.data.shifts[0].shift_rule[0].end_time
+//                        result.data.shifts[0].shift_rule[0].grace_period_in
+//                        result.data.shifts[0].shift_rule[0].grace_period_out
+                    }
+                    is NetworkResult.Error -> {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            errorMessage = result.error.message.let {
+                                AppMessage.Error(
+                                    message = it,
+                                    messageKey = "error_message"
+                                )
+                            },
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun validateInputs(): Boolean {
+        val username = "rahul_kumar_1999"
+        val password = "Rahul@123"
+
+        var isValid = true
+
+//        if (username.isBlank()) {
+//            _uiState.value = _uiState.value.copy(
+//                usernameError = "Username is required"
+//            )
+//            isValid = false
+//        }
+//
+//        if (password.isBlank()) {
+//            _uiState.value = _uiState.value.copy(
+//                passwordError = "Password is required"
+//            )
+//            isValid = false
+//        }
+
+        return isValid
+    }
+
     fun refresh() {
         loadUserShifts()
         loadLatestRecord()
     }
 }
 
-data class DashboardUiState(
+data class DashboardUiStateA(
     val screenState: ScreenState? = null,
     val shifts: List<Shift>? = null,
     val currentShift: Shift? = null,
@@ -321,6 +427,17 @@ data class DashboardUiState(
     val isLoading: Boolean = false,
     val successMessage: String? = null,
     val errorMessage: String? = null,
+    val showSuccessToast: Boolean = false,
+    val showErrorToast: Boolean = false
+)
+
+data class DashboardUiState(
+    val screenState: ScreenState? = null,
+    val currentShift: Shift? = null,
+    val isCheckedIn: Boolean = false,
+    val isLoading: Boolean = false,
+    val successMessage: String? = null,
+    val errorMessage: AppMessage? = null,
     val showSuccessToast: Boolean = false,
     val showErrorToast: Boolean = false
 )

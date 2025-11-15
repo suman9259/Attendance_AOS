@@ -12,6 +12,7 @@ import com.scharfesicht.attendencesystem.core.di.NavManagerEntryPoint
 import com.scharfesicht.attendencesystem.features.attendance.presentation.ui.*
 import com.scharfesicht.attendencesystem.features.attendance.presentation.viewmodel.*
 import com.scharfesicht.attendencesystem.features.facecompare.presentation.ui.FaceCompareScreen
+import com.scharfesicht.attendencesystem.features.facecompare.presentation.ui.FaceVerifyScreen
 import com.scharfesicht.attendencesystem.features.facecompare.presentation.viewmodel.FaceCompareViewModel
 import dagger.hilt.android.EntryPointAccessors
 
@@ -142,6 +143,18 @@ fun AppNavGraph(
             FaceCompareScreen(
                 oldImageUrl = imageUrl,
                 viewModel = viewModel
+            )
+        }
+
+
+        composable(
+            route = ScreenRoutes.FaceRecognition.route,
+
+        ) { navBackStackEntry ->
+            val viewModel: FaceCompareViewModel = hiltViewModel(navBackStackEntry)
+
+            FaceVerifyScreen(
+                viewModel = viewModel,
             )
         }
     }
