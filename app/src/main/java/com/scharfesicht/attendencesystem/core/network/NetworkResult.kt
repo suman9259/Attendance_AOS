@@ -7,31 +7,34 @@ sealed class NetworkResult<out T> {
 }
 
 sealed class ApiException(
-    override val message: String,
-    override val cause: Throwable? = null
-) : Exception(message, cause) {
+    open val msg: String,
+    open val errorCause: Throwable? = null
+) : Exception(msg, errorCause) {
 
     data class NetworkException(
-        override val message: String = "Network error occurred",
-        override val cause: Throwable? = null
-    ) : ApiException(message, cause)
+        override val msg: String = "Network error occurred",
+        override val errorCause: Throwable? = null
+    ) : ApiException(msg, errorCause)
 
     data class ServerException(
         val code: Int,
-        override val message: String = "Server error occurred"
-    ) : ApiException(message)
+        override val msg: String = "Server error occurred",
+        override val errorCause: Throwable? = null
+    ) : ApiException(msg, errorCause)
 
     data class UnauthorizedException(
-        override val message: String = "Unauthorized access"
-    ) : ApiException(message)
+        override val msg: String = "Unauthorized access",
+        override val errorCause: Throwable? = null
+    ) : ApiException(msg, errorCause)
 
     data class ValidationException(
-        override val message: String = "Validation error",
-        val errors: Map<String, List<String>>? = null
-    ) : ApiException(message)
+        override val msg: String = "Validation error",
+        val errors: Map<String, List<String>>? = null,
+        override val errorCause: Throwable? = null
+    ) : ApiException(msg, errorCause)
 
     data class UnknownException(
-        override val message: String = "Unknown error occurred",
-        override val cause: Throwable? = null
-    ) : ApiException(message, cause)
+        override val msg: String = "Unknown error occurred",
+        override val errorCause: Throwable? = null
+    ) : ApiException(msg, errorCause)
 }

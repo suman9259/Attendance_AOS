@@ -9,6 +9,7 @@ import com.scharfesicht.attendencesystem.features.attendance.domain.repository.A
 import com.scharfesicht.attendencesystem.features.attendance.presentation.ui.AttendanceLog
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.catch
 import retrofit2.Response
 import javax.inject.Inject
 
@@ -20,212 +21,145 @@ class AttendanceRepositoryImpl @Inject constructor(
         private const val TAG = "AttendanceRepository"
     }
 
+    private fun <T> safeApiCall(apiCall: suspend () -> Response<ApiResponse<T>>)
+            : Flow<NetworkResult<T>> = flow {
+
+        emit(NetworkResult.Loading)
+
+        val response = apiCall()
+        emit(handleResponse(response))
+
+    }.catch { e ->
+        Log.e(TAG, "API error", e)
+        emit(NetworkResult.Error(handleException(e)))
+    }
+
     override suspend fun login(
         username: String,
         password: String,
         deviceToken: String
-    ): Flow<NetworkResult<LoginData>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiService.login(
-                LoginRequest(username, password, deviceToken)
-            )
-            emit(handleResponse(response))
-        } catch (e: Exception) {
-            Log.e(TAG, "Login error", e)
-            emit(NetworkResult.Error(handleException(e)))
+    ): Flow<NetworkResult<LoginData>> =
+        safeApiCall {
+            apiService.login(LoginRequest(username, password, deviceToken))
         }
-    }
 
-    override suspend fun refreshUser(): Flow<NetworkResult<LoginData>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiService.refreshUser()
-            emit(handleResponse(response))
-        } catch (e: Exception) {
-            Log.e(TAG, "Refresh user error", e)
-            emit(NetworkResult.Error(handleException(e)))
-        }
-    }
+    override suspend fun refreshUser(): Flow<NetworkResult<LoginData>> =
+        safeApiCall { apiService.refreshUser() }
 
     override suspend fun checkIn(
         request: AttendanceRequest
-    ): Flow<NetworkResult<AttendanceRecord>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiService.checkIn(request)
-            emit(handleResponse(response))
-        } catch (e: Exception) {
-            Log.e(TAG, "Check-in error", e)
-            emit(NetworkResult.Error(handleException(e)))
-        }
-    }
+    ): Flow<NetworkResult<AttendanceRecord>> =
+        safeApiCall { apiService.checkIn(request) }
 
     override suspend fun middlePunch(
         request: AttendanceRequest
-    ): Flow<NetworkResult<AttendanceRecord>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiService.middlePunch(request)
-            emit(handleResponse(response))
-        } catch (e: Exception) {
-            Log.e(TAG, "Middle punch error", e)
-            emit(NetworkResult.Error(handleException(e)))
-        }
-    }
+    ): Flow<NetworkResult<AttendanceRecord>> =
+        safeApiCall { apiService.middlePunch(request) }
 
     override suspend fun checkOut(
         request: AttendanceRequest
-    ): Flow<NetworkResult<AttendanceRecord>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiService.checkOut(request)
-            emit(handleResponse(response))
-        } catch (e: Exception) {
-            Log.e(TAG, "Check-out error", e)
-            emit(NetworkResult.Error(handleException(e)))
-        }
-    }
+    ): Flow<NetworkResult<AttendanceRecord>> =
+        safeApiCall { apiService.checkOut(request) }
 
-    override suspend fun getLatestRecord(): Flow<NetworkResult<List<AttendanceRecord>>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiService.getLatestRecord()
-            emit(handleResponse(response))
-        } catch (e: Exception) {
-            Log.e(TAG, "Get latest record error", e)
-            emit(NetworkResult.Error(handleException(e)))
-        }
-    }
+    override suspend fun getLatestRecord()
+            : Flow<NetworkResult<List<AttendanceRecord>>> =
+        safeApiCall { apiService.getLatestRecord() }
 
-    override suspend fun getUserShifts(): Flow<NetworkResult<List<Shift>>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiService.getUserShifts()
-            emit(handleResponse(response))
-        } catch (e: Exception) {
-            Log.e(TAG, "Get user shifts error", e)
-            emit(NetworkResult.Error(handleException(e)))
-        }
-    }
+    override suspend fun getUserShifts()
+            : Flow<NetworkResult<List<Shift>>> =
+        safeApiCall { apiService.getUserShifts() }
 
     override suspend fun logout(): Flow<NetworkResult<Boolean>> = flow {
         emit(NetworkResult.Loading)
-        try {
-            val response = apiService.logout()
-            if (response.isSuccessful) {
-                emit(NetworkResult.Success(true))
-            } else {
-                emit(NetworkResult.Error(ApiException.ServerException(
-                    code = response.code(),
-                    message = response.message()
-                )))
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Logout error", e)
-            emit(NetworkResult.Error(handleException(e)))
+
+        val response = apiService.logout()
+
+        if (response.isSuccessful) {
+            emit(NetworkResult.Success(true))
+        } else {
+            emit(
+                NetworkResult.Error(
+                    ApiException.ServerException(
+                        code = response.code(),
+                        msg = response.message()
+                    )
+                )
+            )
         }
+
+    }.catch { e ->
+        Log.e(TAG, "Logout error", e)
+        emit(NetworkResult.Error(handleException(e)))
     }
 
-    // Mock implementation for getAttendanceLogs
     override suspend fun getAttendanceLogs(month: String, type: String): List<AttendanceLog> {
-        // TODO: Replace with actual API call when endpoint is available
-        // For now, return mock data
         return listOf(
-            AttendanceLog(
-                dayName = "Thursday",
-                dayNumber = "15",
-                punchInTime = "09:15am",
-                punchOutTime = "05:45pm",
-                workingHours = "08h30m"
-            ),
-            AttendanceLog(
-                dayName = "Friday",
-                dayNumber = "16",
-                punchInTime = "09:00am",
-                punchOutTime = "05:30pm",
-                workingHours = "08h30m"
-            )
+            AttendanceLog("Thursday", "15", "09:15am", "05:45pm", "08h30m"),
+            AttendanceLog("Friday", "16", "09:00am", "05:30pm", "08h30m")
         )
     }
 
-    // Helper function to handle API responses
     private fun <T> handleResponse(
         response: Response<ApiResponse<T>>
     ): NetworkResult<T> {
+
         return when {
             response.isSuccessful -> {
-                response.body()?.let { apiResponse ->
-                    apiResponse.data?.let { data ->
-                        NetworkResult.Success(data)
-                    } ?: NetworkResult.Error(
+                val apiBody = response.body()
+                val data = apiBody?.data
+
+                when {
+                    data != null -> NetworkResult.Success(data)
+                    else -> NetworkResult.Error(
                         ApiException.ServerException(
                             code = response.code(),
-                            message = apiResponse.message
+                            msg = apiBody?.message ?: "Empty response"
                         )
                     )
-                } ?: NetworkResult.Error(
-                    ApiException.ServerException(
-                        code = response.code(),
-                        message = "Empty response"
-                    )
-                )
+                }
             }
-            response.code() == 401 -> {
-                NetworkResult.Error(
-                    ApiException.UnauthorizedException("Session expired")
+
+            response.code() == 401 -> NetworkResult.Error(
+                ApiException.UnauthorizedException(msg = "Session expired")
+            )
+
+            response.code() in 400..499 -> NetworkResult.Error(
+                ApiException.ValidationException(
+                    msg = response.message()
                 )
-            }
-            response.code() in 400..499 -> {
-                NetworkResult.Error(
-                    ApiException.ValidationException(
-                        message = response.message()
-                    )
+            )
+
+            response.code() in 500..599 -> NetworkResult.Error(
+                ApiException.ServerException(
+                    code = response.code(),
+                    msg = "Server error"
                 )
-            }
-            response.code() in 500..599 -> {
-                NetworkResult.Error(
-                    ApiException.ServerException(
-                        code = response.code(),
-                        message = "Server error"
-                    )
+            )
+
+            else -> NetworkResult.Error(
+                ApiException.UnknownException(
+                    msg = response.message()
                 )
-            }
-            else -> {
-                NetworkResult.Error(
-                    ApiException.UnknownException(
-                        message = response.message()
-                    )
-                )
-            }
+            )
         }
     }
 
-    // Helper function to handle exceptions
-    private fun handleException(exception: Exception): ApiException {
+    private fun handleException(exception: Throwable): ApiException {
         return when (exception) {
-            is java.net.UnknownHostException -> {
-                ApiException.NetworkException(
-                    message = "No internet connection",
-                    cause = exception
-                )
-            }
-            is java.net.SocketTimeoutException -> {
-                ApiException.NetworkException(
-                    message = "Request timeout",
-                    cause = exception
-                )
-            }
-            is java.io.IOException -> {
-                ApiException.NetworkException(
-                    message = "Network error",
-                    cause = exception
-                )
-            }
+            is java.net.UnknownHostException ->
+                ApiException.NetworkException("No internet connection", exception)
+
+            is java.net.SocketTimeoutException ->
+                ApiException.NetworkException("Request timeout", exception)
+
+            is java.io.IOException ->
+                ApiException.NetworkException("Network error", exception)
+
             is ApiException -> exception
+
             else -> ApiException.UnknownException(
-                message = exception.message ?: "Unknown error",
-                cause = exception
+                msg = exception.message ?: "Unknown error",
+                errorCause = exception
             )
         }
     }

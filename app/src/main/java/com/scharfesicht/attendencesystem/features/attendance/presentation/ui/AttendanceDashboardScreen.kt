@@ -29,6 +29,7 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import com.scharfesicht.attendencesystem.app.navigation.NavManager
+import com.scharfesicht.attendencesystem.app.navigation.ScreenRoutes
 import com.scharfesicht.attendencesystem.features.attendance.domain.model.Shift
 import com.scharfesicht.attendencesystem.features.attendance.presentation.viewmodel.AttendanceDashboardViewModel
 import sa.gov.moi.absherinterior.R
@@ -377,7 +378,10 @@ private fun AttendanceDashboardContent(
                     tabTitleStyle = Typography().small,
                     tabSelectedColor = colorResource(R.color.primary_main),
                     tabUnSelectedColor = colorResource(R.color.white),
-                    onTabClick = { onTabChanged(1) }
+                    onTabClick = {
+                        onTabChanged(1)
+                        navManager?.navigate(ScreenRoutes.AttendanceLogs.route)
+                    }
                 )
             }
         )

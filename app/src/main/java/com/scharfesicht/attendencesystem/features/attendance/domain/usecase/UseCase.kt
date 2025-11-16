@@ -9,6 +9,16 @@ import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
 
+
+// ========== SAFE DATA GENERATE ==========
+private fun now(): String = try {
+    SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+} catch (e: Exception) {
+    // fallback — NEVER crash because of date formatter
+    ""
+}
+
+// ========== LOGIN ==========
 class LoginUseCase @Inject constructor(
     private val repository: AttendanceRepository
 ) {
@@ -17,7 +27,11 @@ class LoginUseCase @Inject constructor(
         password: String,
         deviceToken: String = ""
     ): Flow<NetworkResult<LoginData>> {
-        return repository.login(username, password, deviceToken)
+        return repository.login(
+            username.trim(),
+            password.trim(),
+            deviceToken.trim()
+        )
     }
 }
 
@@ -45,21 +59,18 @@ class CheckInUseCase @Inject constructor(
         authDeviceType: Int? = null,
         authDeviceValue: String? = null
     ): Flow<NetworkResult<AttendanceRecord>> {
+
         val request = AttendanceRequest(
-            checkin_time = getCurrentDateTime(),
-            checkin_coordinates = "$latitude, $longitude",
+            checkin_time = now(),
+            checkin_coordinates = "$latitude,$longitude",
             checkin_zone_id = zoneId,
             checkin_media = mediaPath,
             shift_index = shiftIndex,
             checkin_auth_device_type = authDeviceType,
             checkin_auth_device_value = authDeviceValue
         )
-        return repository.checkIn(request)
-    }
 
-    private fun getCurrentDateTime(): String {
-        val format = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-        return format.format(Date())
+        return repository.checkIn(request)
     }
 }
 
@@ -77,9 +88,10 @@ class MiddlePunchUseCase @Inject constructor(
         authDeviceType: Int? = null,
         authDeviceValue: String? = null
     ): Flow<NetworkResult<AttendanceRecord>> {
+
         val request = AttendanceRequest(
-            checkin_time = getCurrentDateTime(),
-            checkin_coordinates = "$latitude, $longitude",
+            checkin_time = now(),
+            checkin_coordinates = "$latitude,$longitude",
             checkin_zone_id = zoneId,
             checkin_media = mediaPath,
             shift_index = shiftIndex,
@@ -87,11 +99,6 @@ class MiddlePunchUseCase @Inject constructor(
             checkin_auth_device_value = authDeviceValue
         )
         return repository.middlePunch(request)
-    }
-
-    private fun getCurrentDateTime(): String {
-        val format = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-        return format.format(Date())
     }
 }
 
@@ -109,22 +116,21 @@ class CheckOutUseCase @Inject constructor(
         authDeviceType: Int? = null,
         authDeviceValue: String? = null
     ): Flow<NetworkResult<AttendanceRecord>> {
+
+        val coords = "$latitude,$longitude"
+
         val request = AttendanceRequest(
-            checkout_time = getCurrentDateTime(),
-            checkout_coordinates = "$latitude, $longitude",
+            checkout_time = now(),
+            checkout_coordinates = coords,
             checkout_zone_id = zoneId,
             checkout_media = mediaPath,
             shift_index = shiftIndex,
             checkout_auth_device_type = authDeviceType,
             checkout_auth_device_value = authDeviceValue,
-            checkin_coordinates = "$latitude, $longitude"
+            checkin_coordinates = coords // required by backend sometimes
         )
-        return repository.checkOut(request)
-    }
 
-    private fun getCurrentDateTime(): String {
-        val format = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-        return format.format(Date())
+        return repository.checkOut(request)
     }
 }
 

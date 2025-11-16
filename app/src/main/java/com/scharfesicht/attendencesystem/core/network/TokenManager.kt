@@ -29,14 +29,7 @@ class TokenManager @Inject constructor(
         null
     }
 
-    fun getRefreshToken(): String? = try {
-        kotlinx.coroutines.runBlocking {
-            preferenceStorage.refreshToken.firstOrNull()?.takeIf { it.isNotBlank() }
-        }
-    } catch (e: Exception) {
-        Log.e(TAG, "Error getting refresh token", e)
-        null
-    }
+
 
     suspend fun saveJwtToken(token: String) {
         try {
@@ -50,33 +43,15 @@ class TokenManager @Inject constructor(
         }
     }
 
-    suspend fun saveRefreshToken(token: String) {
-        try {
-            if (token.isNotBlank()) {
-                preferenceStorage.saveRefreshToken(token)
-                Log.d(TAG, "Refresh token saved")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error saving refresh token", e)
-            throw e
-        }
-    }
 
     suspend fun saveTokens(jwtToken: String, refreshToken: String) {
         mutex.withLock {
             saveJwtToken(jwtToken)
-            saveRefreshToken(refreshToken)
         }
     }
 
     suspend fun refreshToken(): String? = mutex.withLock {
         try {
-            val currentRefreshToken = preferenceStorage.refreshToken.firstOrNull()
-
-            if (currentRefreshToken.isNullOrBlank()) {
-                Log.e(TAG, "No refresh token available")
-                return null
-            }
 
             Log.d(TAG, "Refreshing token...")
 //            val response = authApi.refreshToken()
@@ -85,7 +60,6 @@ class TokenManager @Inject constructor(
                 val tokenResponse = /*response.token!!*/ "dummy token for test"
 
                 saveJwtToken(tokenResponse)
-                tokenResponse.let { saveRefreshToken(it) }
 
                 Log.d(TAG, "Token refresh successful")
                 return tokenResponse
@@ -113,7 +87,6 @@ class TokenManager @Inject constructor(
         mutex.withLock {
             try {
                 preferenceStorage.saveJwtToken("")
-                preferenceStorage.saveRefreshToken("")
                 Log.d(TAG, "Tokens cleared")
             } catch (e: Exception) {
                 Log.e(TAG, "Error clearing tokens", e)
