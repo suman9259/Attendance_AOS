@@ -5,14 +5,12 @@ import kotlinx.serialization.Serializable
 
 // ========== REQUEST MODELS ==========
 
-@Serializable
 data class LoginRequest(
     val username: String,
     val password: String,
     val device_token: String = ""
 )
 
-@Serializable
 data class AttendanceRequest(
     val checkin_time: String? = null,
     val checkin_coordinates: String,
@@ -62,51 +60,21 @@ data class LoginData(
     val locationType: LocationType? = null,
     val contractType: ContractType? = null,
     val jobTitleType: JobTitleType? = null,
-    val managers: List<Manager> = emptyList(),
+    val managers: Any? = null, // Ignored - can be array or object
     val department: Department? = null,
     val shifts: List<Shift> = emptyList(),
     val wifi: List<Wifi> = emptyList(),
-    @SerializedName("qr")
-    val qrData: QrData? = null, // Can be string, array, or null
+    val qr: Any? = null, // Ignored - can be string, array, or object
     val becons: List<Beacon> = emptyList(),
-    @SerializedName("nfc")
-    val nfcData: NfcData? = null, // Can be string, array, or null
+    val nfc: Any? = null, // Ignored - can be string, array, or object
     val assigned_roles: List<String> = emptyList(),
-    @SerializedName("permissions")
-    val permissionsData: PermissionsData? = null, // Can be string, object, or null
+    val permissions: Any? = null, // Ignored - can be string or object
     val active_leave: ActiveLeave? = null,
-    @SerializedName("active_short_leave")
-    val activeShortLeave: ActiveShortLeave? = null,
+    val active_short_leave: Any? = null, // Ignored - can be anything
     val is_voice_recognition: Int = 0,
     val voice_recognition_id: String? = null,
     val token: String = "",
     val tokens_expire_in: String = ""
-)
-
-// Flexible wrapper for QR data (can be string or array)
-data class QrData(
-    val value: Any? = null
-)
-
-// Flexible wrapper for NFC data (can be string or array)
-data class NfcData(
-    val value: Any? = null
-)
-
-// Flexible wrapper for Permissions (can be string or object)
-data class PermissionsData(
-    val value: Any? = null
-)
-
-// Flexible wrapper for Active Short Leave
-data class ActiveShortLeave(
-    val value: Any? = null
-)
-
-data class Manager(
-    val id: Int = 0,
-    val name: String = "",
-    val uuid: String = ""
 )
 
 data class Zone(
@@ -212,14 +180,7 @@ data class Beacon(
 data class ActiveLeave(
     val is_disable: Int = 0,
     val message: String? = null,
-    val leave: Leave? = null
-)
-
-data class Leave(
-    val id: Int = 0,
-    val type: String = "",
-    val start_date: String = "",
-    val end_date: String = ""
+    val leave: Any? = null // Ignored - can be null or object
 )
 
 // ========== ATTENDANCE RECORD MODELS ==========
@@ -244,27 +205,11 @@ data class AttendanceRecord(
     val checkout_media_url: String? = null,
     val shift_time: String = "",
     val type_text: String = "",
-    val checkin_auth_device: AuthDevice? = null,
-    val checkout_auth_device: AuthDevice? = null,
+    val checkin_auth_device: Any? = null, // Ignored - can be null or object
+    val checkout_auth_device: Any? = null, // Ignored - can be null or object
     val shift: ShiftInfo? = null,
-    val middle_punchs: List<MiddlePunch> = emptyList(),
-    val over_time_punch: OverTimePunch? = null
-)
-
-data class AuthDevice(
-    val id: Int = 0,
-    val name: String = "",
-    val type: String = ""
-)
-
-data class MiddlePunch(
-    val time: String = "",
-    val coordinates: String = ""
-)
-
-data class OverTimePunch(
-    val hours: String = "",
-    val approved: Boolean = false
+    val middle_punchs: Any? = null, // Ignored - can be empty array or array of objects
+    val over_time_punch: Any? = null // Ignored - can be null or object
 )
 
 data class ShiftInfo(
