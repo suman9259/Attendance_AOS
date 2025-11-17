@@ -35,61 +35,33 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var preferenceStorage: IPreferenceStorage
     @Inject lateinit var tokenManager: TokenManager
 
-    private var isLaunchedFromSuperApp = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-
-        // Check if launched from Absher
-        isLaunchedFromSuperApp = intent.getBooleanExtra("FROM_ABSHER", false) ||
-                MiniAppEntryPoint.isLaunchedFromAbsher()
-
-        Log.d(TAG, "Activity created. Launched from Absher: $isLaunchedFromSuperApp")
+//        enableEdgeToEdge()
+//        WindowCompat.setDecorFitsSystemWindows(window, false)
 
         setContent {
-            AttendanceSystemApplicationContent(
-                networkMonitor = networkMonitor,
-                preferenceStorage = preferenceStorage,
-                isLaunchedFromSuperApp = isLaunchedFromSuperApp
-            )
+            AttendanceSystemApplicationContent()
         }
     }
 
 }
-
 @Composable
-fun AttendanceSystemApplicationContent(
-    networkMonitor: NetworkMonitor,
-    preferenceStorage: IPreferenceStorage,
-    isLaunchedFromSuperApp: Boolean,
-) {
-    // Get theme and language from Absher or use defaults
-    val themeMode = MiniAppEntryPoint.superData?.getCurrentTheme()?.data ?: "light"
+fun AttendanceSystemApplicationContent() {
+    val absherLanguage = MiniAppEntryPoint.getCurrentLanguage()
 
-    val language = remember {
-        if (isLaunchedFromSuperApp) {
-            MiniAppEntryPoint.superData?.getCurrentLanguage()?.data ?: "en"
-        } else {
-            "en"
-        }
-    }
+    val isRTL = absherLanguage == "ar"
 
-    val isRTL = language == "ar"
+    Log.d("AttendanceApp", "Final Language: $absherLanguage | RTL=$isRTL")
 
-    Log.d("AttendanceApp", "Theme: $themeMode, Language: $language, RTL: $isRTL")
-
-    AbsherInteriorTheme(){
+    AbsherInteriorTheme {
         LocalizationProvider(
-            language = AppLanguage.from(language),
+            language = AppLanguage.from(absherLanguage),
             isRTL = isRTL
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                AppNavGraph(
-                    isAbsherEnabled = isLaunchedFromSuperApp,
-                    isLaunchedFromSuperApp = isLaunchedFromSuperApp
-                )
+                AppNavGraph()
             }
         }
     }

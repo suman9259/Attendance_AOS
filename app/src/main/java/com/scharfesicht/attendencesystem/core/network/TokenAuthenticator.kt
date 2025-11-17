@@ -24,6 +24,32 @@ class TokenAuthenticator @Inject constructor(
     private val isRefreshing = AtomicBoolean(false)
 
     override fun authenticate(route: Route?, response: Response): Request? {
+//
+//        // Prevent infinite loops
+//        if (response.request.header("X-Auth-Retry") != null) return null
+//
+//        synchronized(this) {
+//            val newToken = runBlocking { tokenManager.getJwtToken() }
+//
+//            // If request already used the latest token → do NOT retry
+//            if (response.request.header("Authorization") == "Bearer $newToken") {
+//                return null
+//            }
+//
+//            // Refresh token
+//            val refreshed = runBlocking { tokenManager.refreshToken() }
+//            if (refreshed == null) return null
+//
+//            // Retry request with new token
+//            return response.request.newBuilder()
+//                .header("Authorization", "Bearer $refreshed")
+//                .header("X-Auth-Retry", "1")
+//                .build()
+//        }
+        return null
+    }
+
+    /*override fun authenticate(route: Route?, response: Response): Request? {
         val requestRetryCount = response.request.header("X-Retry-Count")?.toIntOrNull() ?: 0
 
         if (requestRetryCount >= MAX_RETRY_ATTEMPTS) {
@@ -80,5 +106,5 @@ class TokenAuthenticator @Inject constructor(
                 isRefreshing.set(false)
             }
         }
-    }
+    }*/
 }

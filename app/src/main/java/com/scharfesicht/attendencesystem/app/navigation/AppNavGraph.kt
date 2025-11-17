@@ -17,10 +17,7 @@ import com.scharfesicht.attendencesystem.features.facecompare.presentation.viewm
 import dagger.hilt.android.EntryPointAccessors
 
 @Composable
-fun AppNavGraph(
-    isAbsherEnabled: Boolean = false,
-    isLaunchedFromSuperApp: Boolean = false,
-) {
+fun AppNavGraph() {
     val context = LocalContext.current.applicationContext
     val navManager = remember {
         EntryPointAccessors.fromApplication(

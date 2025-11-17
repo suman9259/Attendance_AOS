@@ -50,14 +50,19 @@ class TokenManager @Inject constructor(
         }
     }
 
-    suspend fun refreshToken(): String? = mutex.withLock {
+    suspend fun refreshToken(): String? {
+        return null // Disable refresh completely
+    }
+
+
+    /*suspend fun refreshToken(): String? = mutex.withLock {
         try {
 
             Log.d(TAG, "Refreshing token...")
 //            val response = authApi.refreshToken()
 
-            if (/*response.success && response.data != null*/ true) {
-                val tokenResponse = /*response.token!!*/ "dummy token for test"
+            if (*//*response.success && response.data != null*//* true) {
+                val tokenResponse = *//*response.token!!*//* "dummy token for test"
 
                 saveJwtToken(tokenResponse)
 
@@ -71,7 +76,7 @@ class TokenManager @Inject constructor(
             Log.e(TAG, "Token refresh exception", e)
             return null
         }
-    }
+    }*/
 
     suspend fun isAuthenticated(): Boolean {
         return try {

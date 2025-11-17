@@ -10,6 +10,7 @@ import com.scharfesicht.attendencesystem.features.attendance.presentation.ui.Att
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.catch
+import org.json.JSONObject
 import retrofit2.Response
 import javax.inject.Inject
 
@@ -103,45 +104,68 @@ class AttendanceRepositoryImpl @Inject constructor(
         response: Response<ApiResponse<T>>
     ): NetworkResult<T> {
 
-        return when {
-            response.isSuccessful -> {
-                val apiBody = response.body()
-                val data = apiBody?.data
+        // ---- Extract error message (if any) ----
+        val errorMessage: String? = try {
+            val errorJson = response.errorBody()?.string()
+            if (!errorJson.isNullOrBlank()) {
+                // Example expected: {"message":"Account already logged in"}
+                JSONObject(errorJson).optString("message", null)
+            } else null
+        } catch (e: Exception) {
+            null
+        }
 
-                when {
-                    data != null -> NetworkResult.Success(data)
-                    else -> NetworkResult.Error(
-                        ApiException.ServerException(
-                            code = response.code(),
-                            msg = apiBody?.message ?: "Empty response"
-                        )
+        // ---- Success handling ----
+        if (response.isSuccessful) {
+            val apiBody = response.body()
+            val data = apiBody?.data
+
+            return if (data != null) {
+                NetworkResult.Success(data)
+            } else {
+                NetworkResult.Error(
+                    ApiException.ServerException(
+                        code = response.code(),
+                        msg = apiBody?.message ?: errorMessage ?: "Empty response"
                     )
-                }
+                )
             }
+        }
 
-            response.code() == 401 -> NetworkResult.Error(
-                ApiException.UnauthorizedException(msg = "Session expired")
-            )
-
-            response.code() in 400..499 -> NetworkResult.Error(
-                ApiException.ValidationException(
-                    msg = response.message()
-                )
-            )
-
-            response.code() in 500..599 -> NetworkResult.Error(
-                ApiException.ServerException(
-                    code = response.code(),
-                    msg = "Server error"
-                )
-            )
-
-            else -> NetworkResult.Error(
-                ApiException.UnknownException(
-                    msg = response.message()
+        // ---- Unauthorized (401) ----
+        if (response.code() == 401) {
+            return NetworkResult.Error(
+                ApiException.UnauthorizedException(
+                    msg = errorMessage ?: response.body()?.message ?: "Unauthorized access"
                 )
             )
         }
+
+        // ---- Client Errors (400–499) ----
+        if (response.code() in 400..499) {
+            return NetworkResult.Error(
+                ApiException.ValidationException(
+                    msg = errorMessage ?: response.message()
+                )
+            )
+        }
+
+        // ---- Server Errors (500–599) ----
+        if (response.code() in 500..599) {
+            return NetworkResult.Error(
+                ApiException.ServerException(
+                    code = response.code(),
+                    msg = errorMessage ?: "Server error"
+                )
+            )
+        }
+
+        // ---- Unknown Error ----
+        return NetworkResult.Error(
+            ApiException.UnknownException(
+                msg = errorMessage ?: response.message()
+            )
+        )
     }
 
     private fun handleException(exception: Throwable): ApiException {

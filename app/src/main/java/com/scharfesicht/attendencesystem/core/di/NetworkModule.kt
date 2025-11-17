@@ -116,6 +116,7 @@ object NetworkModule {
         addInterceptor(rateLimitInterceptor)
         addInterceptor(authInterceptor)
         addInterceptor(cacheInterceptor)
+        addInterceptor(retryInterceptor)
         cache(cache)
 
         if (BuildConfig.DEBUG) {
@@ -124,7 +125,7 @@ object NetworkModule {
             addInterceptor(apiLoggerInterceptor)
         }
 
-        addNetworkInterceptor(retryInterceptor)
+        // KEEP TOKEN AUTH LAST
         authenticator(tokenAuthenticator)
 
         connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
@@ -133,7 +134,7 @@ object NetworkModule {
         callTimeout(READ_TIMEOUT + CONNECT_TIMEOUT, TimeUnit.SECONDS)
 
         connectionPool(connectionPool)
-        retryOnConnectionFailure(true)
+        retryOnConnectionFailure(false)
         followRedirects(true)
         followSslRedirects(true)
     }.build()

@@ -28,6 +28,7 @@ import androidx.core.content.FileProvider
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint
 import com.scharfesicht.attendencesystem.app.navigation.NavManager
 import com.scharfesicht.attendencesystem.app.navigation.ScreenRoutes
 import com.scharfesicht.attendencesystem.features.attendance.domain.model.Shift
@@ -49,7 +50,6 @@ fun AttendanceDashboardScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val selectedTab by viewModel.selectedTab.collectAsState()
-    val isDarkMode by viewModel.isDarkMode.collectAsState()
     val shouldRequestLocation by viewModel.shouldRequestLocation.collectAsState()
     val shouldOpenCamera by viewModel.shouldOpenCamera.collectAsState()
 
@@ -104,6 +104,32 @@ fun AttendanceDashboardScreen(
         }
     }
 
+    // Auto-check permissions when screen opens
+    LaunchedEffect(Unit) {
+
+        // LOCATION PERMISSION
+        if (ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        } else {
+            viewModel.onLocationPermissionGranted()
+        }
+
+        // CAMERA PERMISSION
+        if (ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.CAMERA
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        } else {
+            viewModel.onCameraPermissionGranted()
+        }
+    }
+
     // Handle location request
     LaunchedEffect(shouldRequestLocation) {
         if (shouldRequestLocation) {
@@ -148,7 +174,7 @@ fun AttendanceDashboardScreen(
         topBar = {
             AbsherAppBar(
                 showEventTheme = false,
-                title = "Time Attendance",
+                title = MiniAppEntryPoint.getServiceTitle(),
                 generalIcon = {
                     Icon(
                         painter = painterResource(R.drawable.ic_as_admin),

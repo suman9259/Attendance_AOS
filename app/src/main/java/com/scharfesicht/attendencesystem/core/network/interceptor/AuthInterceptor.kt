@@ -38,7 +38,10 @@ class AuthInterceptor @Inject constructor(
                     addHeader(HEADER_AUTHORIZATION, "Bearer $it")
                 }
                 addHeader(HEADER_ACCEPT, "application/json")
-                addHeader(HEADER_CONTENT_TYPE, CONTENT_TYPE_JSON)
+                // Only add content-type for POST/PUT/PATCH
+                if (originalRequest.method != "GET") {
+                    addHeader("Content-Type", "multipart/form-data")
+                }
 //                addHeader(HEADER_APP_VERSION, BuildConfig.VERSION_NAME)
 //                addHeader(HEADER_BUILD_NUMBER, BuildConfig.VERSION_CODE.toString())
 //                addHeader(HEADER_DEVICE_TYPE, DEVICE_TYPE)

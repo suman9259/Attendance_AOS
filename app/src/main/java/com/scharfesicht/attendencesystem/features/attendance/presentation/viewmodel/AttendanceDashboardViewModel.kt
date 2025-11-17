@@ -77,6 +77,14 @@ class AttendanceDashboardViewModel @Inject constructor(
         safeExecute("initializeApp") { initializeApp() }
     }
 
+
+    fun onLocationPermissionGranted() {
+        _shouldRequestLocation.value = true
+    }
+
+    fun onCameraPermissionGranted() {
+        _shouldOpenCamera.value = null
+    }
     private fun loadUserTheme() {
         viewModelScope.launch {
             try {
@@ -304,7 +312,7 @@ class AttendanceDashboardViewModel @Inject constructor(
                             try {
                                 val loginData = result.data
 
-                                // Save to DataStore with error handling
+//                                // Save to DataStore with error handling
                                 safeExecute("saveLoginData") {
                                     saveLoginData(loginData)
                                 }
@@ -327,10 +335,10 @@ class AttendanceDashboardViewModel @Inject constructor(
 
                                 Log.d(TAG, "Login successful: ${loginData.full_name}")
 
-                                // Fetch latest attendance record (non-blocking)
-                                safeExecute("checkCurrentAttendanceStatus") {
-                                    checkCurrentAttendanceStatus()
-                                }
+//                                // Fetch latest attendance record (non-blocking)
+//                                safeExecute("checkCurrentAttendanceStatus") {
+//                                    checkCurrentAttendanceStatus()
+//                                }
                             } catch (e: Exception) {
                                 Log.e(TAG, "Error processing login data", e)
                                 showError("Error processing login data: ${e.message}")
