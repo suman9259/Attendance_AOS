@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import com.scharfesicht.attendencesystem.app.mock.MockAbsherHelper
+import com.scharfesicht.attendencesystem.core.utils.LocalizedText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -77,6 +78,82 @@ class MiniAppEntryPoint : IMiniApp {
             ar = { superData?.getUserLastNameAr() ?: emptyFail() },
             en = { superData?.getUserLastNameEn() ?: emptyFail() }
         )
+
+        fun getPunchCardTitle(): String? =
+            getLocalizedValue(
+                ar = { AbsherResponse(success = true, data = "الدوام الخاص بك", message = null) },
+                en = { AbsherResponse(success = true, data = "Your Assigned Shift", message = null) }
+            )
+
+        fun getPunchCardSmallTitle(): String? =
+            getLocalizedValue(
+                ar = { AbsherResponse(success = true, data = "دوام ثابت", message = null) },
+                en = { AbsherResponse(success = true, data = "Standard Shift", message = null) }
+            )
+
+        fun getPunchInCardTitle(): String? =
+            getLocalizedValue(
+                ar = { AbsherResponse(success = true, data = "تسجيل الدخول", message = null) },
+                en = { AbsherResponse(success = true, data = "Punch In", message = null) }
+            )
+
+        fun getPunchOutCardTitle(): String? =
+            getLocalizedValue(
+                ar = { AbsherResponse(success = true, data = "نسجيل الخروج", message = null) },
+                en = { AbsherResponse(success = true, data = "Punch Out", message = null) }
+            )
+        fun getMarkAttendanceTitle(): String? =
+            getLocalizedValue(
+                ar = { AbsherResponse(success = true, data = "تسجيل الحضور", message = null) },
+                en = { AbsherResponse(success = true, data = "mark attendance", message = null) }
+            )
+
+        fun getPermissionTitle(): String? =
+            getLocalizedValue(
+                ar = { AbsherResponse(success = true, data = "طلب استئذان", message = null) },
+                en = { AbsherResponse(success = true, data = "permission application", message = null) }
+            )
+        fun getNoAttendanceRecordsText(): String? =
+            getLocalizedValue(
+                ar = { AbsherResponse(success = true, data = "لا توجد سجلات حضور", message = null) },
+                en = { AbsherResponse(success = true, data = "No attendance records found", message = null) }
+            )
+
+
+        fun getDateText(): String? =
+            getLocalizedValue(
+                ar = { AbsherResponse(success = true, data = "التاريخ", message = null) },
+                en = { AbsherResponse(success = true, data = "Date", message = null) }
+            )
+
+
+        fun getWorkingHoursTitle(): String? =
+            getLocalizedValue(
+                ar = { AbsherResponse(success = true, data = "دوام ثابت", message = null) },
+                en = { AbsherResponse(success = true, data = "Standard Shift", message = null) }
+            )
+
+        fun getFaceNotRecognizedText(): String? =
+            getLocalizedValue(
+                ar = { AbsherResponse(success = true, data = "الوجه غير مُتعرف عليه", message = null) },
+                en = { AbsherResponse(success = true, data = "Face not recognized", message = null) }
+            )
+
+        fun getTryAgainText(): String? =
+            getLocalizedValue(
+                ar = { AbsherResponse(success = true, data = "حاول مرة أخرى", message = null) },
+                en = { AbsherResponse(success = true, data = "Try again", message = null) }
+            )
+
+        fun getSuccessfullyPunchedInText(): String? =
+            getLocalizedValue(
+                ar = { AbsherResponse(success = true, data = "تم تسجيل الدخول بنجاح", message = null) },
+                en = { AbsherResponse(success = true, data = "Successfully punched in", message = null) }
+            )
+
+
+
+
 
         // ----------------------------------------------------------
         // Non-localized (English only or neutral)
@@ -227,6 +304,20 @@ class MiniAppEntryPoint : IMiniApp {
                 Log.e(TAG, "Error reading list", e)
                 null
             }
+        private fun getBothLocalized(
+            ar: () -> String,
+            en: () -> String
+        ): LocalizedText {
+            return try {
+                LocalizedText(
+                    ar = ar(),
+                    en = en()
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "Error getting both localized values", e)
+                LocalizedText("", "")
+            }
+        }
     }
 
     // ----------------------------------------------------------

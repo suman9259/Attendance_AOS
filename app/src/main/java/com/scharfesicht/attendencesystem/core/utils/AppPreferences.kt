@@ -43,3 +43,7 @@ enum class AppLanguage(val code: String) {
         }
     }
 }
+data class LocalizedText(
+    val ar: String,
+    val en: String
+)

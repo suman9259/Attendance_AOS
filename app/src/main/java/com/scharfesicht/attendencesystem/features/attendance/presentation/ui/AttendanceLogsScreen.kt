@@ -15,6 +15,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getDateText
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getMarkAttendanceTitle
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getNoAttendanceRecordsText
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getPermissionTitle
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getPunchInCardTitle
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getPunchOutCardTitle
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getWorkingHoursTitle
 import com.scharfesicht.attendencesystem.app.navigation.NavManager
 import com.scharfesicht.attendencesystem.features.attendance.presentation.viewmodel.AttendanceLogsViewModel
 import sa.gov.moi.absherinterior.R
@@ -220,7 +227,7 @@ private fun AttendanceLogsContent(
             tabs = {
                 CustomIndicatorTab(
                     isSelected = selectedTab == 0,
-                    tabTitle = "Attendance Logs",
+                    tabTitle = getMarkAttendanceTitle() ?:"",
                     tabTitleStyle = Typography().small,
                     tabSelectedColor = colorResource(R.color.primary_main),
                     tabUnSelectedColor = colorResource(R.color.dark_gray_400),
@@ -228,7 +235,7 @@ private fun AttendanceLogsContent(
                 )
                 CustomIndicatorTab(
                     isSelected = selectedTab == 1,
-                    tabTitle = "Permission Request",
+                    tabTitle = getPermissionTitle()?:"",
                     tabTitleStyle = Typography().small,
                     tabSelectedColor = colorResource(R.color.primary_main),
                     tabUnSelectedColor = colorResource(R.color.dark_gray_400),
@@ -250,7 +257,7 @@ private fun AttendanceLogsContent(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No attendance records found",
+                        text = getNoAttendanceRecordsText() ?: "",
                         style = Typography().base,
                         color = colorResource(R.color.dark_gray_400)
                     )
@@ -275,25 +282,25 @@ private fun AttendanceTableHeader() {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            text = "Date",
+            text = getDateText() ?:"",
             modifier = Modifier.weight(1.2f),
             style = Typography().small.copy(fontWeight = FontWeight.Bold),
             color = colorResource(R.color.content_fg_color)
         )
         Text(
-            text = "Punch In",
+            text = getPunchInCardTitle() ?:"",
             modifier = Modifier.weight(1f),
             style = Typography().small.copy(fontWeight = FontWeight.Bold),
             color = colorResource(R.color.content_fg_color)
         )
         Text(
-            text = "Punch Out",
+            text = getPunchOutCardTitle() ?:"",
             modifier = Modifier.weight(1f),
             style = Typography().small.copy(fontWeight = FontWeight.Bold),
             color = colorResource(R.color.content_fg_color)
         )
         Text(
-            text = "Work Hours",
+            text = getWorkingHoursTitle() ?: "",
             modifier = Modifier.weight(1f),
             style = Typography().small.copy(fontWeight = FontWeight.Bold),
             color = colorResource(R.color.content_fg_color)

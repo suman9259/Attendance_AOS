@@ -22,6 +22,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getFaceNotRecognizedText
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getSuccessfullyPunchedInText
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getTryAgainText
 import sa.gov.moi.absherinterior.R
 import sa.gov.moi.absherinterior.components.*
 import sa.gov.moi.absherinterior.theme.AbsherInteriorTheme
@@ -120,7 +123,7 @@ private fun FailureContent(onTryAgain: () -> Unit) {
 
         Text(
 //            text = stringResource(R.string.face_not_recognized),
-            text = "Face not recognized",
+            text = getFaceNotRecognizedText() ?: "",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = colorResource(R.color.content_fg_color)
@@ -133,7 +136,7 @@ private fun FailureContent(onTryAgain: () -> Unit) {
                 .fillMaxWidth()
                 .padding(horizontal = 8.dp),
 //            buttonTitle = stringResource(R.string.try_again),
-            buttonTitle = "Try again",
+            buttonTitle = getTryAgainText() ?: "",
             titleStyle = Typography().bodyLarge.copy(fontSize = 18.sp, fontWeight = FontWeight.Bold),
             titleColor = Color.White,
             buttonSize = ButtonSize.LARGE,
@@ -155,9 +158,13 @@ fun FaceNotRecognizedScreen(
         topBar = {
             AbsherAppBar(
                 showEventTheme = false,
-//                title = stringResource(R.string.time_attendance),
-                title = "time attendance",
-                generalIcon = { Icon(painter = painterResource(R.drawable.ic_menu), contentDescription = null) }
+                title = MiniAppEntryPoint.getServiceTitle(),
+                generalIcon = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_as_admin),
+                        contentDescription = "time attendance"
+                    )
+                }
             )
         },
         contentPadding = PaddingValues(AppPadding.NON.padding()),
@@ -182,7 +189,7 @@ fun FaceNotRecognizedScreen(
                         .padding(20.dp)
                         .fillMaxWidth(),
 //                    buttonTitle = stringResource(R.string.try_again),
-                    buttonTitle = "Try Again",
+                    buttonTitle = getTryAgainText() ?: "",
                     titleStyle = Typography().bodyLarge,
                     titleColor = Color.White,
                     buttonSize = ButtonSize.MEDIUM,
@@ -254,7 +261,7 @@ fun SuccessMessageScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = message.ifBlank { /*stringResource(R.string.successfully_punched_in)*/  "Successfully punched in" },
+                                text = message.ifBlank { /*stringResource(R.string.successfully_punched_in)*/  getSuccessfullyPunchedInText() ?: "" },
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White,

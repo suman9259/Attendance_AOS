@@ -29,6 +29,12 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getMarkAttendanceTitle
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getPermissionTitle
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getPunchCardSmallTitle
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getPunchCardTitle
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getPunchInCardTitle
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getPunchOutCardTitle
 import com.scharfesicht.attendencesystem.app.navigation.NavManager
 import com.scharfesicht.attendencesystem.app.navigation.ScreenRoutes
 import com.scharfesicht.attendencesystem.features.attendance.domain.model.Shift
@@ -382,7 +388,7 @@ private fun AttendanceDashboardContent(
             tabs = {
                 CustomIndicatorTab(
                     isSelected = selectedTab == 0,
-                    tabTitle = "Mark Attendance",
+                    tabTitle = getMarkAttendanceTitle() ?: "",
                     tabTitleStyle = Typography().small,
                     tabSelectedColor = colorResource(R.color.primary_main),
                     tabUnSelectedColor = colorResource(R.color.white),
@@ -390,7 +396,7 @@ private fun AttendanceDashboardContent(
                 )
                 CustomIndicatorTab(
                     isSelected = selectedTab == 1,
-                    tabTitle = "Permission Application",
+                    tabTitle = getPermissionTitle() ?: "",
                     tabTitleStyle = Typography().small,
                     tabSelectedColor = colorResource(R.color.primary_main),
                     tabUnSelectedColor = colorResource(R.color.white),
@@ -405,7 +411,7 @@ private fun AttendanceDashboardContent(
         16.0.MOIVerticalSpacer()
 
         PunchInOutCard(
-            shiftTitle = "Assigned Shift",
+            shiftTitle = getPunchCardTitle() ?: "",
             currentShift = currentShift,
             onPunchIn = onPunchIn,
             onPunchOut = onPunchOut,
@@ -460,7 +466,7 @@ fun PunchInOutCard(
                 4.0.MOIVerticalSpacer()
 
                 Text(
-                    text = currentShift?.shift_name_lang ?: "Standard Shift",
+                    text = currentShift?.shift_name_lang ?: getPunchCardSmallTitle() ?: "",
                     style = Typography().base.copy(fontWeight = FontWeight.Bold),
                     color = colorResource(R.color.dark_gray_100)
                 )
@@ -507,7 +513,7 @@ fun PunchInOutCard(
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = if (isPunchingIn) "Processing..." else "Punch In",
+                                    text = getPunchInCardTitle() ?: "",
                                     style = Typography().base.copy(fontWeight = FontWeight.Bold),
                                     color = Color.White,
                                     maxLines = 1
@@ -546,7 +552,7 @@ fun PunchInOutCard(
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = if (isPunchingOut) "Processing..." else "Punch Out",
+                                    text = getPunchOutCardTitle() ?: "",
                                     style = Typography().base.copy(fontWeight = FontWeight.Bold),
                                     color = Color.White,
                                     maxLines = 1
