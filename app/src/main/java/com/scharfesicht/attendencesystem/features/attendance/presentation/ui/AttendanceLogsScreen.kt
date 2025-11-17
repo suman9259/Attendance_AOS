@@ -14,6 +14,7 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint
 import com.scharfesicht.attendencesystem.app.navigation.NavManager
 import com.scharfesicht.attendencesystem.features.attendance.presentation.viewmodel.AttendanceLogsViewModel
 import sa.gov.moi.absherinterior.R
@@ -39,11 +40,11 @@ fun AttendanceLogsScreen(
         topBar = {
             AbsherAppBar(
                 showEventTheme = false,
-                title = "Attendance Logs",
+                title = MiniAppEntryPoint.getServiceTitle(),
                 generalIcon = {
                     Icon(
-                        painter = painterResource(R.drawable.ic_menu),
-                        contentDescription = "Menu"
+                        painter = painterResource(R.drawable.ic_as_admin),
+                        contentDescription = "time attendance"
                     )
                 }
             )

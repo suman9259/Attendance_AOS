@@ -118,16 +118,6 @@ fun AttendanceDashboardScreen(
             viewModel.onLocationPermissionGranted()
         }
 
-        // CAMERA PERMISSION
-        if (ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.CAMERA
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-        } else {
-            viewModel.onCameraPermissionGranted()
-        }
     }
 
     // Handle location request

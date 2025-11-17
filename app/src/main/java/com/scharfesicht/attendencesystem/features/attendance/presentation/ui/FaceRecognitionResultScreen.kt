@@ -21,6 +21,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint
 import sa.gov.moi.absherinterior.R
 import sa.gov.moi.absherinterior.components.*
 import sa.gov.moi.absherinterior.theme.AbsherInteriorTheme
@@ -47,32 +48,15 @@ fun FaceRecognitionResultScreen(
 
     MainScreenView(
         uiState = ScreenState.Success(true),
-        topBar = {
-            AbsherAppBarLarge(
+        topBar ={
+            AbsherAppBar(
                 showEventTheme = false,
-                appBarContent = {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        CustomIconButton(
-                            icon = R.drawable.ic_arrow_right,
-                            onClick = { navController.navigateUp() },
-                            iconSize = 18,
-                            tint = colorResource(R.color.header_fg_color)
-                        )
-                    }
-                },
-                centerLogo = {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_download),
-                            contentDescription = "Logo",
-                            modifier = Modifier.size(64.dp),
-                            colorFilter = ColorFilter.tint(colorResource(R.color.primary_main))
-                        )
-                    }
+                title = MiniAppEntryPoint.getServiceTitle(),
+                generalIcon = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_as_admin),
+                        contentDescription = "time attendance"
+                    )
                 }
             )
         },

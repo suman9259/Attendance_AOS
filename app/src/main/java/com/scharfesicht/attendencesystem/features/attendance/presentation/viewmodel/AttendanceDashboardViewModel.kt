@@ -82,9 +82,6 @@ class AttendanceDashboardViewModel @Inject constructor(
         _shouldRequestLocation.value = true
     }
 
-    fun onCameraPermissionGranted() {
-        _shouldOpenCamera.value = null
-    }
     private fun loadUserTheme() {
         viewModelScope.launch {
             try {
