@@ -112,32 +112,16 @@ fun AttendanceDashboardScreen(
         }
     }
 
-    // Auto-check permissions when screen opens
-    LaunchedEffect(Unit) {
-
-        // LOCATION PERMISSION
-        if (ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-        }
-    }
-
     // Handle location request
     LaunchedEffect(shouldRequestLocation) {
         if (shouldRequestLocation) {
-            when (PackageManager.PERMISSION_GRANTED) {
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                ) -> {
-                    requestLocation(context, viewModel)
-                }
-                else -> {
-                    locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-                }
+            val granted = ContextCompat.checkSelfPermission(
+                context, Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+            if (granted) {
+                requestLocation(context, viewModel)
+            } else {
+                locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
             }
         }
     }
@@ -145,21 +129,15 @@ fun AttendanceDashboardScreen(
     // Handle camera request
     LaunchedEffect(shouldOpenCamera) {
         shouldOpenCamera?.let {
-            when (PackageManager.PERMISSION_GRANTED) {
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.CAMERA
-                ) -> {
-                    photoUri = createImageFileUri(context)
-                    if (photoUri != null) {
-                        cameraLauncher.launch(photoUri!!)
-                    } else {
-                        viewModel.onCameraError("Failed to create image file")
-                    }
-                }
-                else -> {
-                    cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-                }
+            val granted = ContextCompat.checkSelfPermission(
+                context, Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED
+
+            if (granted) {
+                photoUri = createImageFileUri(context)
+                photoUri?.let { uri -> cameraLauncher.launch(uri) }
+            } else {
+                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
             }
         }
     }
@@ -191,6 +169,8 @@ fun AttendanceDashboardScreen(
             )
         },
         successComposable = {
+            //TODO : Add AM and PM.
+            // TODO : Punch Card Size FIx.
             if (uiState.isLoading || !uiState.isLoginComplete) {
                 AttendanceShimmerLoading()
             } else {
@@ -268,7 +248,9 @@ private fun requestLocation(
             Priority.PRIORITY_HIGH_ACCURACY,
             cancellationTokenSource.token
         ).addOnSuccessListener { location ->
-            if (location == null) {
+            if (location != null) {
+                viewModel.onLocationReceived(location.latitude, location.longitude)
+            } else {
                 viewModel.onLocationError("Unable to get location")
             }
         }.addOnFailureListener { exception ->
@@ -475,7 +457,7 @@ fun PunchInOutCard(
                         modifier = Modifier.weight(1f),
                         cornerSize = CardSize.MEDIUM,
                         cardColor = colorResource(R.color.green_main),
-                        onCardClicked = if (!isPunchingIn && !isPunchingOut) onPunchIn else { {} },
+                        onCardClicked = onPunchIn,
                         cardContent = {
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -484,21 +466,13 @@ fun PunchInOutCard(
                                     .fillMaxWidth()
                                     .padding(vertical = 16.dp, horizontal = 8.dp)
                             ) {
-                                if (isPunchingIn) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(24.dp)
-                                            .shimmerEffect()
-                                    )
-                                } else {
-                                    CustomIconButton(
-                                        icon = R.drawable.ic_exit_app,
-                                        iconSize = 24,
-                                        tint = Color.White,
-                                        onClick = onPunchIn,
-                                        showContainer = false
-                                    )
-                                }
+                                CustomIconButton(
+                                    icon = R.drawable.ic_exit_app,
+                                    iconSize = 24,
+                                    tint = Color.White,
+                                    onClick = onPunchIn,
+                                    showContainer = false
+                                )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     text = getPunchInCardTitle() ?: "",
@@ -514,7 +488,7 @@ fun PunchInOutCard(
                         modifier = Modifier.weight(1f),
                         cornerSize = CardSize.MEDIUM,
                         cardColor = colorResource(R.color.primary_main),
-                        onCardClicked = if (!isPunchingIn && !isPunchingOut) onPunchOut else { {} },
+                        onCardClicked = onPunchOut,
                         cardContent = {
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -523,21 +497,14 @@ fun PunchInOutCard(
                                     .fillMaxWidth()
                                     .padding(vertical = 16.dp, horizontal = 8.dp)
                             ) {
-                                if (isPunchingOut) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(24.dp)
-                                            .shimmerEffect()
-                                    )
-                                } else {
-                                    CustomIconButton(
-                                        icon = R.drawable.ic_exit_app,
-                                        iconSize = 24,
-                                        tint = Color.White,
-                                        onClick = onPunchOut,
-                                        showContainer = false
-                                    )
-                                }
+                                CustomIconButton(
+                                    icon = R.drawable.ic_exit_app,
+                                    iconSize = 24,
+                                    tint = Color.White,
+                                    onClick = onPunchOut,
+                                    showContainer = false
+                                )
+                                // TODO: Update Punch in or Punch out Icons.
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     text = getPunchOutCardTitle() ?: "",

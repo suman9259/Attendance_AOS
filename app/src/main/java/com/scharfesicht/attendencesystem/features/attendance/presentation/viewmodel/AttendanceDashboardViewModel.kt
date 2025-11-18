@@ -319,8 +319,11 @@ class AttendanceDashboardViewModel @Inject constructor(
                                     allShifts = loginData.shifts,
                                     profileImageUrl = loginData.profile_image,
                                     userName = loginData.full_name,
-                                    expectedLatitude = safeParseDouble(zone?.zone_latitude, 0.0, "zone latitude"),
-                                    expectedLongitude = safeParseDouble(zone?.zone_longitude, 0.0, "zone longitude"),
+                                    // TODO: Delete Dummy Lat-long value.
+                                    expectedLatitude = safeParseDouble("30.341295", 0.0, "zone latitude"),
+//                                    expectedLatitude = safeParseDouble(zone?.zone_latitude, 0.0, "zone latitude"),
+//                                    expectedLongitude = safeParseDouble(zone?.zone_longitude, 0.0, "zone longitude"),
+                                    expectedLongitude = safeParseDouble("76.385473", 0.0, "zone longitude"),
                                     maxDistanceMeters = safeParseDouble(zone?.zone_radius, MAX_DISTANCE_METERS, "zone radius"),
                                     isLoading = false,
                                     isLoginComplete = true,

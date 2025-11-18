@@ -230,7 +230,7 @@ private fun AttendanceLogsContent(
                     tabTitle = getMarkAttendanceTitle() ?:"",
                     tabTitleStyle = Typography().small,
                     tabSelectedColor = colorResource(R.color.primary_main),
-                    tabUnSelectedColor = colorResource(R.color.dark_gray_400),
+                    tabUnSelectedColor = colorResource(R.color.white),
                     onTabClick = { onTabChanged(0) }
                 )
                 CustomIndicatorTab(
@@ -238,7 +238,7 @@ private fun AttendanceLogsContent(
                     tabTitle = getPermissionTitle()?:"",
                     tabTitleStyle = Typography().small,
                     tabSelectedColor = colorResource(R.color.primary_main),
-                    tabUnSelectedColor = colorResource(R.color.dark_gray_400),
+                    tabUnSelectedColor = colorResource(R.color.white),
                     onTabClick = { onTabChanged(1) }
                 )
             }
@@ -265,7 +265,7 @@ private fun AttendanceLogsContent(
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(logs) { log ->
-                        AttendanceLogItem(log = log, isDarkMode = isDarkMode)
+                        AttendanceLogItem(log = log)
                     }
                 }
             }
@@ -310,8 +310,7 @@ private fun AttendanceTableHeader() {
 
 @Composable
 private fun AttendanceLogItem(
-    log: AttendanceLog,
-    isDarkMode: Boolean
+    log: AttendanceLog
 ) {
     val statusColor = when (log.status) {
         AttendanceLogStatus.PRESENT -> colorResource(R.color.green_main_400)
