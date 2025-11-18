@@ -1,6 +1,7 @@
 package com.scharfesicht.attendencesystem.features.attendance.domain.model
 
 import com.google.gson.annotations.SerializedName
+import com.scharfesicht.attendencesystem.core.utils.toAmPm
 import kotlinx.serialization.Serializable
 
 // ========== REQUEST MODELS ==========
@@ -147,7 +148,11 @@ data class ShiftRule(
     val grace_period_out: String = "0",
     val login_before_start_time: String = "0",
     val logout_after_end_time: String = "0"
-)
+) {
+    fun getStartTimeAmPm(): String = start_time.toAmPm()
+    fun getEndTimeAmPm(): String = end_time.toAmPm()
+}
+
 
 @Serializable
 data class MiddlePunchRule(

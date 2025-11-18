@@ -13,7 +13,6 @@ import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import com.scharfesicht.attendencesystem.app.navigation.AppNavGraph
-import com.scharfesicht.attendencesystem.app.ui.theme.AttendanceSystemTheme
 import com.scharfesicht.attendencesystem.core.datastore.IPreferenceStorage
 import com.scharfesicht.attendencesystem.core.localization.LocalizationProvider
 import com.scharfesicht.attendencesystem.core.network.TokenManager

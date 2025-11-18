@@ -11,9 +11,6 @@ import androidx.navigation.navArgument
 import com.scharfesicht.attendencesystem.core.di.NavManagerEntryPoint
 import com.scharfesicht.attendencesystem.features.attendance.presentation.ui.*
 import com.scharfesicht.attendencesystem.features.attendance.presentation.viewmodel.*
-import com.scharfesicht.attendencesystem.features.facecompare.presentation.ui.FaceCompareScreen
-import com.scharfesicht.attendencesystem.features.facecompare.presentation.ui.FaceVerifyScreen
-import com.scharfesicht.attendencesystem.features.facecompare.presentation.viewmodel.FaceCompareViewModel
 import dagger.hilt.android.EntryPointAccessors
 
 @Composable
@@ -62,32 +59,6 @@ fun AppNavGraph() {
             )
         }
 
-//        // ========== FACE RECOGNITION ==========
-//        composable(
-//            route = "${ScreenRoutes.FaceRecognition.route}?${ScreenRoutes.FaceRecognition.ARG_IS_CHECK_IN}={is_check_in}",
-//            arguments = listOf(
-//                navArgument(ScreenRoutes.FaceRecognition.ARG_IS_CHECK_IN) {
-//                    type = NavType.BoolType
-//                    defaultValue = true
-//                }
-//            )
-//        ) { navBackStackEntry ->
-//            val isCheckIn = navBackStackEntry.arguments
-//                ?.getBoolean(ScreenRoutes.FaceRecognition.ARG_IS_CHECK_IN) ?: true
-//
-//            FaceRecognitionScreen(
-//                navController = navController,
-//                isCheckIn = isCheckIn,
-//                onSuccess = { message ->
-//                    navManager.navigate(
-//                        ScreenRoutes.FaceRecognitionSuccess.createRoute(message)
-//                    )
-//                },
-//                onFailed = {
-//                    navManager.navigate(ScreenRoutes.FaceRecognitionFailed.route)
-//                }
-//            )
-//        }
 
         // ========== FACE RECOGNITION SUCCESS ==========
         composable(
@@ -123,36 +94,5 @@ fun AppNavGraph() {
             )
         }
 
-        // ========== FACE COMPARE (Testing) ==========
-        composable(
-            route = "${ScreenRoutes.FaceCompare.route}?${ScreenRoutes.FaceCompare.ARG_IMAGE_URL}={image_url}",
-            arguments = listOf(
-                navArgument(ScreenRoutes.FaceCompare.ARG_IMAGE_URL) {
-                    type = NavType.StringType
-                    defaultValue = ""
-                }
-            )
-        ) { navBackStackEntry ->
-            val imageUrl = navBackStackEntry.arguments
-                ?.getString(ScreenRoutes.FaceCompare.ARG_IMAGE_URL) ?: ""
-            val viewModel: FaceCompareViewModel = hiltViewModel(navBackStackEntry)
-
-            FaceCompareScreen(
-                oldImageUrl = imageUrl,
-                viewModel = viewModel
-            )
-        }
-
-
-        composable(
-            route = ScreenRoutes.FaceRecognition.route,
-
-        ) { navBackStackEntry ->
-            val viewModel: FaceCompareViewModel = hiltViewModel(navBackStackEntry)
-
-            FaceVerifyScreen(
-                viewModel = viewModel,
-            )
-        }
     }
 }

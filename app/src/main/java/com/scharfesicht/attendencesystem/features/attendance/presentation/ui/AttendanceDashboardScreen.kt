@@ -11,6 +11,7 @@ import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.magnifier
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.Typography
@@ -37,6 +38,7 @@ import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getPunc
 import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getPunchOutCardTitle
 import com.scharfesicht.attendencesystem.app.navigation.NavManager
 import com.scharfesicht.attendencesystem.app.navigation.ScreenRoutes
+import com.scharfesicht.attendencesystem.core.utils.toAmPm
 import com.scharfesicht.attendencesystem.features.attendance.domain.model.Shift
 import com.scharfesicht.attendencesystem.features.attendance.presentation.viewmodel.AttendanceDashboardViewModel
 import sa.gov.moi.absherinterior.R
@@ -120,10 +122,7 @@ fun AttendanceDashboardScreen(
             ) != PackageManager.PERMISSION_GRANTED
         ) {
             locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-        } else {
-            viewModel.onLocationPermissionGranted()
         }
-
     }
 
     // Handle location request
@@ -180,6 +179,11 @@ fun AttendanceDashboardScreen(
             )
         },
         contentPadding = PaddingValues(AppPadding.NON.padding()),
+        errorComposable = {
+            ErrorComponent(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            )
+        },
         message = uiState.errorMessage?.let {
             AppMessage.Error(
                 message = it.message,
@@ -264,9 +268,7 @@ private fun requestLocation(
             Priority.PRIORITY_HIGH_ACCURACY,
             cancellationTokenSource.token
         ).addOnSuccessListener { location ->
-            if (location != null) {
-                viewModel.onLocationReceived(location.latitude, location.longitude)
-            } else {
+            if (location == null) {
                 viewModel.onLocationError("Unable to get location")
             }
         }.addOnFailureListener { exception ->
@@ -402,6 +404,7 @@ private fun AttendanceDashboardContent(
                     tabUnSelectedColor = colorResource(R.color.white),
                     onTabClick = {
                         onTabChanged(1)
+                        // TODO : Where I add this navigation.
                         navManager?.navigate(ScreenRoutes.AttendanceLogs.route)
                     }
                 )
@@ -422,21 +425,6 @@ private fun AttendanceDashboardContent(
         12.0.MOIVerticalSpacer()
     }
 }
-
-data class AttendanceData(
-    val upcomingHoliday: String,
-    val shiftName: String,
-    val shiftTime: String,
-    val summary: AttendanceSummary
-)
-
-data class AttendanceSummary(
-    val attendance: Int,
-    val lateLessThan1h: Int,
-    val lateMoreThan1h: Int,
-    val earlyPunchOut: Int,
-    val absence: Int
-)
 
 @Composable
 fun PunchInOutCard(
@@ -472,7 +460,7 @@ fun PunchInOutCard(
                 )
 
                 Text(
-                    text = "${currentShift?.shift_rule?.get(0)?.start_time ?: "--"} - ${currentShift?.shift_rule?.get(0)?.end_time ?: "--"}",
+                    text = "${currentShift?.shift_rule?.get(0)?.start_time?.toAmPm() ?: "--"} - ${currentShift?.shift_rule?.get(0)?.end_time?.toAmPm() ?: "--"}",
                     style = Typography().base.copy(fontWeight = FontWeight.Bold),
                     color = colorResource(R.color.primary_main)
                 )
@@ -565,3 +553,18 @@ fun PunchInOutCard(
         }
     )
 }
+
+data class AttendanceData(
+    val upcomingHoliday: String,
+    val shiftName: String,
+    val shiftTime: String,
+    val summary: AttendanceSummary
+)
+
+data class AttendanceSummary(
+    val attendance: Int,
+    val lateLessThan1h: Int,
+    val lateMoreThan1h: Int,
+    val earlyPunchOut: Int,
+    val absence: Int
+)

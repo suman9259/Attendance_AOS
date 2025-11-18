@@ -44,50 +44,6 @@ class TokenManager @Inject constructor(
     }
 
 
-    suspend fun saveTokens(jwtToken: String, refreshToken: String) {
-        mutex.withLock {
-            saveJwtToken(jwtToken)
-        }
-    }
-
-    suspend fun refreshToken(): String? {
-        return null // Disable refresh completely
-    }
-
-
-    /*suspend fun refreshToken(): String? = mutex.withLock {
-        try {
-
-            Log.d(TAG, "Refreshing token...")
-//            val response = authApi.refreshToken()
-
-            if (*//*response.success && response.data != null*//* true) {
-                val tokenResponse = *//*response.token!!*//* "dummy token for test"
-
-                saveJwtToken(tokenResponse)
-
-                Log.d(TAG, "Token refresh successful")
-                return tokenResponse
-            } else {
-//                Log.e(TAG, "Token refresh failed: ${response.status} ${response.message}")
-                return null
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Token refresh exception", e)
-            return null
-        }
-    }*/
-
-    suspend fun isAuthenticated(): Boolean {
-        return try {
-            val token = preferenceStorage.jwtToken.firstOrNull()
-            !token.isNullOrBlank()
-        } catch (e: Exception) {
-            Log.e(TAG, "Error checking authentication", e)
-            false
-        }
-    }
-
     suspend fun clearTokens() {
         mutex.withLock {
             try {
@@ -98,57 +54,4 @@ class TokenManager @Inject constructor(
             }
         }
     }
-
-    fun isTokenValid(token: String?): Boolean {
-        if (token.isNullOrBlank()) return false
-        val parts = token.split(".")
-        return parts.size == 3
-    }
 }
-/*
-
-@Singleton
-class TokenManager @Inject constructor(
-    @ApplicationContext private val context: Context
-) {
-    private val masterKey = MasterKey.Builder(context)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .build()
-
-    private val sharedPreferences = EncryptedSharedPreferences.create(
-        context,
-        "attendance_secure_prefs",
-        masterKey,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
-
-    fun saveToken(token: String) {
-        sharedPreferences.edit().putString(KEY_TOKEN, token).apply()
-    }
-
-    fun getToken(): String? {
-        return sharedPreferences.getString(KEY_TOKEN, null)
-    }
-
-    fun saveRefreshToken(refreshToken: String) {
-        sharedPreferences.edit().putString(KEY_REFRESH_TOKEN, refreshToken).apply()
-    }
-
-    fun getRefreshToken(): String? {
-        return sharedPreferences.getString(KEY_REFRESH_TOKEN, null)
-    }
-
-    fun clearTokens() {
-        sharedPreferences.edit().clear().apply()
-    }
-
-    fun isLoggedIn(): Boolean {
-        return getToken() != null
-    }
-
-    companion object {
-        private const val KEY_TOKEN = "auth_token"
-        private const val KEY_REFRESH_TOKEN = "refresh_token"
-    }
-}*/

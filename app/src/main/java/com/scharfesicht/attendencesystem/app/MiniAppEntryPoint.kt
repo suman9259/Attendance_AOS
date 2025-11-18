@@ -37,7 +37,7 @@ class MiniAppEntryPoint : IMiniApp {
             ar: () -> AbsherResponse<String>,
             en: () -> AbsherResponse<String>
         ): String? = try {
-            val lang = /*superData?.getCurrentLanguage()?.data ?: "en"*/ "ar"
+            val lang = superData?.getCurrentLanguage()?.data ?: "ar"
             val result = if (lang == "ar") ar() else en()
             result.data?.takeIf { it.isNotBlank() }
         } catch (e: Exception) {
@@ -162,7 +162,7 @@ class MiniAppEntryPoint : IMiniApp {
         fun getUserToken(): String? = safe { superData?.getUserToken() }
 
         fun getCurrentLanguage(): String =
-            /*superData?.getCurrentLanguage()?.data ?:*/ "ar"
+            superData?.getCurrentLanguage()?.data ?: "ar"
 
         fun getCurrentTheme(): String =
             superData?.getCurrentTheme()?.data ?: "light"
@@ -238,6 +238,7 @@ class MiniAppEntryPoint : IMiniApp {
         // ----------------------------------------------------------
 
         fun getCameraImage(): String? =
+            //TODO: This method is not working. Need to fix it.
             safe { superData?.getImageFromCamera() }
 
         fun getGalleryImage(): String? =

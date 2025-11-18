@@ -78,9 +78,6 @@ class AttendanceDashboardViewModel @Inject constructor(
     }
 
 
-    fun onLocationPermissionGranted() {
-        _shouldRequestLocation.value = true
-    }
 
     private fun loadUserTheme() {
         viewModelScope.launch {

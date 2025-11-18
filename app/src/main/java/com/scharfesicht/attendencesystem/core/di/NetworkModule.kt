@@ -2,7 +2,6 @@ package com.scharfesicht.attendencesystem.core.di
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import com.scharfesicht.attendencesystem.core.network.TokenAuthenticator
 import com.scharfesicht.attendencesystem.core.network.interceptor.*
 import com.scharfesicht.attendencesystem.BuildConfig
 import dagger.Module
@@ -108,7 +107,6 @@ object NetworkModule {
         apiLoggerInterceptor: ApiLoggerInterceptor,
         cacheInterceptor: CacheInterceptor,
         rateLimitInterceptor: RateLimitInterceptor,
-        tokenAuthenticator: TokenAuthenticator,
         cache: Cache,
         connectionPool: ConnectionPool
     ): OkHttpClient = OkHttpClient.Builder().apply {
@@ -124,9 +122,6 @@ object NetworkModule {
         } else {
             addInterceptor(apiLoggerInterceptor)
         }
-
-        // KEEP TOKEN AUTH LAST
-        authenticator(tokenAuthenticator)
 
         connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
         readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
