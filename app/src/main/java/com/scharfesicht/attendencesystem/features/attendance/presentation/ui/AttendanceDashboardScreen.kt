@@ -8,10 +8,12 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.MediaStore
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.magnifier
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.Typography
@@ -169,8 +171,14 @@ fun AttendanceDashboardScreen(
             )
         },
         successComposable = {
-            //TODO : Add AM and PM.
-            // TODO : Punch Card Size FIx.
+            Log.e("AttendanceScreen", "${
+                uiState.errorMessage?.let {
+                    AppMessage.Error(
+                        message = it.message,
+                        messageKey = "error_message"
+                    )
+                }
+            }")
             if (uiState.isLoading || !uiState.isLoginComplete) {
                 AttendanceShimmerLoading()
             } else {
@@ -182,6 +190,7 @@ fun AttendanceDashboardScreen(
                     onPunchOut = viewModel::startPunchOut,
                     isPunchingIn = uiState.isPunchingIn,
                     isPunchingOut = uiState.isPunchingOut,
+                    isCheckedIn = uiState.isCheckedIn,
                     navManager = navManager
                 )
             }
@@ -357,6 +366,7 @@ private fun AttendanceDashboardContent(
     onPunchOut: () -> Unit,
     isPunchingIn: Boolean,
     isPunchingOut: Boolean,
+    isCheckedIn: Boolean,
     navManager: NavManager?
 ) {
     Column(
@@ -386,7 +396,6 @@ private fun AttendanceDashboardContent(
                     tabUnSelectedColor = colorResource(R.color.white),
                     onTabClick = {
                         onTabChanged(1)
-                        // TODO : Where I add this navigation.
                         navManager?.navigate(ScreenRoutes.AttendanceLogs.route)
                     }
                 )
@@ -401,13 +410,13 @@ private fun AttendanceDashboardContent(
             onPunchIn = onPunchIn,
             onPunchOut = onPunchOut,
             isPunchingIn = isPunchingIn,
-            isPunchingOut = isPunchingOut
+            isPunchingOut = isPunchingOut,
+            isCheckedIn = isCheckedIn
         )
 
         12.0.MOIVerticalSpacer()
     }
 }
-
 @Composable
 fun PunchInOutCard(
     modifier: Modifier = Modifier,
@@ -416,7 +425,8 @@ fun PunchInOutCard(
     onPunchIn: () -> Unit,
     onPunchOut: () -> Unit,
     isPunchingIn: Boolean = false,
-    isPunchingOut: Boolean = false
+    isPunchingOut: Boolean = false,
+    isCheckedIn: Boolean = false
 ) {
     MOICard(
         cornerSize = CardSize.LARGE,
@@ -427,13 +437,12 @@ fun PunchInOutCard(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+
                 Text(
                     text = shiftTitle,
                     style = Typography().base.copy(fontWeight = FontWeight.Bold),
                     color = colorResource(R.color.content_fg_color)
                 )
-
-                4.0.MOIVerticalSpacer()
 
                 Text(
                     text = currentShift?.shift_name_lang ?: getPunchCardSmallTitle() ?: "",
@@ -442,7 +451,8 @@ fun PunchInOutCard(
                 )
 
                 Text(
-                    text = "${currentShift?.shift_rule?.get(0)?.start_time?.toAmPm() ?: "--"} - ${currentShift?.shift_rule?.get(0)?.end_time?.toAmPm() ?: "--"}",
+                    text = "${currentShift?.shift_rule?.get(0)?.start_time?.toAmPm() ?: "--"}" +
+                            " - ${currentShift?.shift_rule?.get(0)?.end_time?.toAmPm() ?: "--"}",
                     style = Typography().base.copy(fontWeight = FontWeight.Bold),
                     color = colorResource(R.color.primary_main)
                 )
@@ -453,11 +463,19 @@ fun PunchInOutCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+
+                    // -----------------------------
+                    //  PUNCH IN BUTTON
+                    // -----------------------------
+                    val enablePunchIn = !isCheckedIn && !isPunchingOut && !isPunchingIn
+
                     MOICard(
                         modifier = Modifier.weight(1f),
                         cornerSize = CardSize.MEDIUM,
                         cardColor = colorResource(R.color.green_main),
-                        onCardClicked = onPunchIn,
+                        onCardClicked = {
+                            if (enablePunchIn) onPunchIn()
+                        },
                         cardContent = {
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -470,25 +488,34 @@ fun PunchInOutCard(
                                     icon = R.drawable.ic_exit_app,
                                     iconSize = 24,
                                     tint = Color.White,
-                                    onClick = onPunchIn,
+                                    onClick = {
+                                        if (enablePunchIn) onPunchIn()
+                                    },
                                     showContainer = false
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
+
                                 Text(
                                     text = getPunchInCardTitle() ?: "",
                                     style = Typography().base.copy(fontWeight = FontWeight.Bold),
-                                    color = Color.White,
-                                    maxLines = 1
+                                    color = Color.White
                                 )
                             }
                         }
                     )
 
+                    // -----------------------------
+                    //  PUNCH OUT BUTTON
+                    // -----------------------------
+                    val enablePunchOut = isCheckedIn && !isPunchingIn && !isPunchingOut
+
                     MOICard(
                         modifier = Modifier.weight(1f),
                         cornerSize = CardSize.MEDIUM,
                         cardColor = colorResource(R.color.primary_main),
-                        onCardClicked = onPunchOut,
+                        onCardClicked = {
+                            if (enablePunchOut) onPunchOut()
+                        },
                         cardContent = {
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -501,7 +528,7 @@ fun PunchInOutCard(
                                     icon = R.drawable.ic_exit_app,
                                     iconSize = 24,
                                     tint = Color.White,
-                                    onClick = onPunchOut,
+                                    onClick = { if (enablePunchOut) onPunchOut() },
                                     showContainer = false
                                 )
                                 // TODO: Update Punch in or Punch out Icons.
