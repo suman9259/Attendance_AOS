@@ -1,18 +1,13 @@
 package com.scharfesicht.attendencesystem.features.attendance.presentation.ui
 
 import android.Manifest
-import android.app.Activity
-import android.content.Intent
+import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.net.Uri
-import android.provider.MediaStore
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.magnifier
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -27,7 +22,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
@@ -43,14 +37,17 @@ import com.scharfesicht.attendencesystem.app.navigation.ScreenRoutes
 import com.scharfesicht.attendencesystem.core.utils.toAmPm
 import com.scharfesicht.attendencesystem.features.attendance.domain.model.Shift
 import com.scharfesicht.attendencesystem.features.attendance.presentation.viewmodel.AttendanceDashboardViewModel
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
+import com.scharfesicht.attendencesystem.features.attendance.presentation.viewmodel.PunchFlowState
 import sa.gov.moi.absherinterior.R
 import sa.gov.moi.absherinterior.components.*
 import sa.gov.moi.absherinterior.models.AppMessage
 import sa.gov.moi.absherinterior.theme.base
 import sa.gov.moi.absherinterior.theme.small
 import sa.gov.moi.absherinterior.utils.*
-import java.io.File
-
+import java.lang.IllegalStateException
 
 @Composable
 fun AttendanceDashboardScreen(
@@ -60,11 +57,34 @@ fun AttendanceDashboardScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val selectedTab by viewModel.selectedTab.collectAsState()
-    val shouldRequestLocation by viewModel.shouldRequestLocation.collectAsState()
-    val shouldOpenCamera by viewModel.shouldOpenCamera.collectAsState()
+    val flowState by viewModel.flowState.collectAsState()
 
-    // Photo file URI state
-    var photoUri by remember { mutableStateOf<Uri?>(null) }
+    // ─────────────────────────────
+    // CAMERA: TakePicturePreview()  (NO FILE / NO FILEPROVIDER)
+    // ─────────────────────────────
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap: Bitmap? ->
+        if (bitmap != null) {
+            Log.d("AttendanceScreen", "Camera bitmap received: ${bitmap.width}x${bitmap.height}")
+            viewModel.onPhotoCaptured(bitmap)
+        } else {
+            Log.e("AttendanceScreen", "Camera returned null bitmap")
+            viewModel.onCameraError("Camera cancelled or failed")
+        }
+    }
+
+    // Camera permission launcher
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            // Directly open camera preview
+            cameraLauncher.launch(null)
+        } else {
+            viewModel.onCameraError("Camera permission denied")
+        }
+    }
 
     // Location permission launcher
     val locationPermissionLauncher = rememberLauncherForActivityResult(
@@ -77,73 +97,44 @@ fun AttendanceDashboardScreen(
         }
     }
 
-    // Camera launcher - FULL SIZE IMAGE
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicture()
-    ) { success ->
-        if (success && photoUri != null) {
-            try {
-                // Load full-size image from file
-                val bitmap = loadBitmapFromUri(context, photoUri!!)
-                if (bitmap != null) {
-                    viewModel.onPhotoCaptured(bitmap)
+
+    LaunchedEffect(flowState) {
+        when (flowState) {
+
+            is PunchFlowState.WaitingForLocation -> {
+                val granted = ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+
+                if (granted) {
+                    requestLocation(context, viewModel)
                 } else {
-                    viewModel.onCameraError("Failed to load captured photo")
+                    locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                 }
-            } catch (e: Exception) {
-                viewModel.onCameraError("Error loading photo: ${e.message}")
             }
-        } else {
-            viewModel.onCameraError("Camera cancelled or failed")
+
+            is PunchFlowState.WaitingForCamera -> {
+                val granted = ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.CAMERA
+                ) == PackageManager.PERMISSION_GRANTED
+
+                if (granted) {
+                    cameraLauncher.launch(null)
+                } else {
+                    cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                }
+            }
+
+            else -> Unit
         }
     }
 
-    // Camera permission launcher
-    val cameraPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            photoUri = createImageFileUri(context)
-            if (photoUri != null) {
-                cameraLauncher.launch(photoUri!!)
-            } else {
-                viewModel.onCameraError("Failed to create image file")
-            }
-        } else {
-            viewModel.onCameraError("Camera permission denied")
-        }
-    }
 
-    // Handle location request
-    LaunchedEffect(shouldRequestLocation) {
-        if (shouldRequestLocation) {
-            val granted = ContextCompat.checkSelfPermission(
-                context, Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-            if (granted) {
-                requestLocation(context, viewModel)
-            } else {
-                locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-            }
-        }
-    }
-
-    // Handle camera request
-    LaunchedEffect(shouldOpenCamera) {
-        shouldOpenCamera?.let {
-            val granted = ContextCompat.checkSelfPermission(
-                context, Manifest.permission.CAMERA
-            ) == PackageManager.PERMISSION_GRANTED
-
-            if (granted) {
-                photoUri = createImageFileUri(context)
-                photoUri?.let { uri -> cameraLauncher.launch(uri) }
-            } else {
-                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-            }
-        }
-    }
-
+    // ─────────────────────────────
+    // MAIN SCREEN CONTENT
+    // ─────────────────────────────
     MainScreenView(
         uiState = uiState.screenState,
         topBar = {
@@ -159,26 +150,26 @@ fun AttendanceDashboardScreen(
             )
         },
         contentPadding = PaddingValues(AppPadding.NON.padding()),
-        errorComposable = {
+
+        errorComposable = { msg ->
             ErrorComponent(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                errorMessage = msg
             )
         },
-        message = uiState.errorMessage?.let {
-            AppMessage.Error(
-                message = it.message,
-                messageKey = "error_message"
+
+        message = when {
+            uiState.errorMessage != null -> uiState.errorMessage
+            uiState.successMessage != null -> AppMessage.Success(
+                message = uiState.successMessage ?: "",
+                messageKey = "success_toast"
             )
+            else -> null
         },
+
         successComposable = {
-            Log.e("AttendanceScreen", "${
-                uiState.errorMessage?.let {
-                    AppMessage.Error(
-                        message = it.message,
-                        messageKey = "error_message"
-                    )
-                }
-            }")
             if (uiState.isLoading || !uiState.isLoginComplete) {
                 AttendanceShimmerLoading()
             } else {
@@ -197,55 +188,21 @@ fun AttendanceDashboardScreen(
         }
     )
 
+    // If you have native toast or Absher message system, trigger from here
     LaunchedEffect(uiState.showSuccessToast, uiState.showErrorToast) {
-        if (uiState.showSuccessToast) {
-            viewModel.onToastShown()
-        }
-        if (uiState.showErrorToast) {
+        if (uiState.showSuccessToast || uiState.showErrorToast) {
+            // You already store AppMessage in uiState.errorMessage / successMessage
+            // Just notify the host app or show Snackbar/Toast here if needed.
             viewModel.onToastShown()
         }
     }
 }
 
 /**
- * Create a temporary file URI for camera to save full-size image
+ * Request current location & send it to ViewModel
  */
-private fun createImageFileUri(context: android.content.Context): Uri? {
-    return try {
-        val timeStamp = System.currentTimeMillis()
-        val imageFileName = "attendance_photo_$timeStamp.jpg"
-        val imageFile = File(context.cacheDir, imageFileName)
-
-        FileProvider.getUriForFile(
-            context,
-            "${context.packageName}.fileprovider",
-            imageFile
-        )
-    } catch (e: Exception) {
-        android.util.Log.e("AttendanceScreen", "Error creating image file", e)
-        null
-    }
-}
-
-/**
- * Load full-size bitmap from URI
- */
-private fun loadBitmapFromUri(context: android.content.Context, uri: Uri): Bitmap? {
-    return try {
-        val inputStream = context.contentResolver.openInputStream(uri)
-        val bitmap = BitmapFactory.decodeStream(inputStream)
-        inputStream?.close()
-
-        android.util.Log.d("AttendanceScreen", "Loaded bitmap: ${bitmap?.width}x${bitmap?.height}")
-        bitmap
-    } catch (e: Exception) {
-        android.util.Log.e("AttendanceScreen", "Error loading bitmap", e)
-        null
-    }
-}
-
 private fun requestLocation(
-    context: android.content.Context,
+    context: Context,
     viewModel: AttendanceDashboardViewModel
 ) {
     val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
@@ -258,6 +215,10 @@ private fun requestLocation(
             cancellationTokenSource.token
         ).addOnSuccessListener { location ->
             if (location != null) {
+                Log.d(
+                    "AttendanceScreen",
+                    "Location received: ${location.latitude}, ${location.longitude}"
+                )
                 viewModel.onLocationReceived(location.latitude, location.longitude)
             } else {
                 viewModel.onLocationError("Unable to get location")
@@ -267,6 +228,8 @@ private fun requestLocation(
         }
     } catch (e: SecurityException) {
         viewModel.onLocationError("Location permission not granted")
+    } catch (e: Exception) {
+        viewModel.onLocationError(e.message ?: "Unknown location error")
     }
 }
 
@@ -417,6 +380,7 @@ private fun AttendanceDashboardContent(
         12.0.MOIVerticalSpacer()
     }
 }
+
 @Composable
 fun PunchInOutCard(
     modifier: Modifier = Modifier,
@@ -464,9 +428,6 @@ fun PunchInOutCard(
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
 
-                    // -----------------------------
-                    //  PUNCH IN BUTTON
-                    // -----------------------------
                     val enablePunchIn = !isCheckedIn && !isPunchingOut && !isPunchingIn
 
                     MOICard(
@@ -531,7 +492,6 @@ fun PunchInOutCard(
                                     onClick = { if (enablePunchOut) onPunchOut() },
                                     showContainer = false
                                 )
-                                // TODO: Update Punch in or Punch out Icons.
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     text = getPunchOutCardTitle() ?: "",
@@ -547,18 +507,3 @@ fun PunchInOutCard(
         }
     )
 }
-
-data class AttendanceData(
-    val upcomingHoliday: String,
-    val shiftName: String,
-    val shiftTime: String,
-    val summary: AttendanceSummary
-)
-
-data class AttendanceSummary(
-    val attendance: Int,
-    val lateLessThan1h: Int,
-    val lateMoreThan1h: Int,
-    val earlyPunchOut: Int,
-    val absence: Int
-)

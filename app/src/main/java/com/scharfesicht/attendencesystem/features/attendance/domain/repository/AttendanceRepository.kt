@@ -6,9 +6,7 @@ import com.scharfesicht.attendencesystem.features.attendance.domain.model.Attend
 import com.scharfesicht.attendencesystem.features.attendance.domain.model.LoginData
 import com.scharfesicht.attendencesystem.features.attendance.domain.model.Shift
 import com.scharfesicht.attendencesystem.features.attendance.domain.model.ShiftInfo
-import com.scharfesicht.attendencesystem.features.attendance.domain.model.UserProfile
 import com.scharfesicht.attendencesystem.features.attendance.presentation.ui.AttendanceLog
-import com.scharfesicht.attendencesystem.features.attendance.presentation.ui.AttendanceData
 import kotlinx.coroutines.flow.Flow
 
 interface AttendanceRepository {

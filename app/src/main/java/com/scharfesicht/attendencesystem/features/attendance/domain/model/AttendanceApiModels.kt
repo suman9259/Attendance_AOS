@@ -1,5 +1,6 @@
 package com.scharfesicht.attendencesystem.features.attendance.domain.model
 
+import android.graphics.Bitmap
 import com.google.gson.annotations.SerializedName
 import com.scharfesicht.attendencesystem.core.utils.toAmPm
 import kotlinx.serialization.Serializable
@@ -243,4 +244,36 @@ fun LoginData.toUserProfile() = UserProfile(
     profileImage = profile_image,
     department = department?.department_name_lang,
     shifts = shifts
+)
+sealed class PunchFlowState {
+    object Idle : PunchFlowState()
+    object WaitingForLocation : PunchFlowState()
+    object WaitingForCamera : PunchFlowState()
+    object ValidatingFace : PunchFlowState()
+    object ValidatingBiometric : PunchFlowState()
+    object PunchingIn : PunchFlowState()
+    object PunchingOut : PunchFlowState()
+
+    data class Error(val message: String) : PunchFlowState()
+}
+enum class PunchType { IN, OUT }
+data class PunchSession(
+    val type: PunchType,
+    val location: Pair<Double, Double>? = null,
+    val bitmap: Bitmap? = null
+)
+
+data class AttendanceData(
+    val upcomingHoliday: String,
+    val shiftName: String,
+    val shiftTime: String,
+    val summary: AttendanceSummary
+)
+
+data class AttendanceSummary(
+    val attendance: Int,
+    val lateLessThan1h: Int,
+    val lateMoreThan1h: Int,
+    val earlyPunchOut: Int,
+    val absence: Int
 )
