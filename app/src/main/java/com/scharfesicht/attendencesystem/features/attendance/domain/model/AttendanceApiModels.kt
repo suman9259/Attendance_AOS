@@ -14,6 +14,7 @@ data class LoginRequest(
 )
 
 data class AttendanceRequest(
+    val shift_id : Int? = null,
     val checkin_time: String? = null,
     val checkin_coordinates: String,
     val checkin_zone_id: Int? = null,

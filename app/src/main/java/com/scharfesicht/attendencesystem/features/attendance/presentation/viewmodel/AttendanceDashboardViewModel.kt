@@ -525,6 +525,10 @@ class AttendanceDashboardViewModel @Inject constructor(
 
     private fun startPunch(type: PunchType) {
         try {
+            _uiState.update { it.copy(
+                isLoading = true,
+                successMessage = "Checking your location."
+            ) }
             val now = System.currentTimeMillis()
             if (type == PunchType.IN) {
                 if (now - lastPunchInClick < CLICK_DEBOUNCE_MS) return
@@ -539,25 +543,36 @@ class AttendanceDashboardViewModel @Inject constructor(
             val shiftRule = currentShift?.shift_rule?.firstOrNull()
 
             if (shiftRule == null) {
+                _uiState.update { it.copy(isLoading = false) }
                 showError("No shift assigned. Please contact your administrator.")
                 return
             }
 
             if (type == PunchType.IN && state.isCheckedIn) {
+                _uiState.update { it.copy(isLoading = false) }
                 showError("You are already punched in. Please punch out first.")
                 return
             }
 
             if (type == PunchType.OUT && !state.isCheckedIn) {
+                _uiState.update { it.copy(isLoading = false) }
                 showError("You are not punched in. Please punch in first.")
                 return
             }
-
+            _uiState.update { it.copy(
+                isLoading = true,
+                successMessage = "Checking your shift timing."
+            ) }
             // Time validation
             if (!validateTime(type, shiftRule)) return
 
             // Start flow
             _session.value = PunchSession(type = type)
+
+            _uiState.update { it.copy(
+                isLoading = true,
+                successMessage = "Checking your Current Location."
+            ) }
             _flowState.value = PunchFlowState.WaitingForLocation
 
             _uiState.update {
@@ -666,6 +681,10 @@ class AttendanceDashboardViewModel @Inject constructor(
             _session.update {
                 it?.copy(location = latitude to longitude)
             }
+            _uiState.update { it.copy(
+                isLoading = true,
+                successMessage = "Checking your face."
+            ) }
             _flowState.value = PunchFlowState.WaitingForCamera
 
         } catch (e: Exception) {
@@ -676,6 +695,10 @@ class AttendanceDashboardViewModel @Inject constructor(
 
     private fun handlePhoto(bitmap: Bitmap) {
         try {
+            _uiState.update { it.copy(
+                isLoading = true,
+                successMessage = "Checking your face."
+            ) }
             _session.update { it?.copy(bitmap = bitmap) }
             Log.d(TAG, "✓ Photo captured: ${bitmap.width}x${bitmap.height}")
             _flowState.value = PunchFlowState.ValidatingFace
@@ -750,6 +773,7 @@ class AttendanceDashboardViewModel @Inject constructor(
     private fun completePunch() {
         val session = _session.value
         val location = session?.location
+        val currentShift = _uiState.value.currentShift
 
         if (session == null || location == null) {
             showError("Internal error. Please try again.")
@@ -760,8 +784,8 @@ class AttendanceDashboardViewModel @Inject constructor(
             PunchType.IN -> {
                 _flowState.value = PunchFlowState.PunchingIn
                 viewModelScope.launch {
-                    try {
-                        checkInUseCase(location.first, location.second, 0).collect { result ->
+                    try {// TODO: Check Shift_id Parameter.
+                        checkInUseCase(shift_id = currentShift?.shift_type ?: 1,location.first, location.second, 0).collect { result ->
                             handlePunchResult(result, isIn = true)
                         }
                     } catch (e: Exception) {
@@ -826,8 +850,9 @@ class AttendanceDashboardViewModel @Inject constructor(
 
     private fun showError(message: String) {
         _flowState.value = PunchFlowState.Error(message)
-        _uiState.update {
+           _uiState.update {
             it.copy(
+                isLoading = false,
                 errorMessage = AppMessage.Error(
                     message = message,
                     messageKey = "error_message"

@@ -51,6 +51,7 @@ class CheckInUseCase @Inject constructor(
     private val repository: AttendanceRepository
 ) {
     suspend operator fun invoke(
+        shift_id: Int? = null,
         latitude: Double,
         longitude: Double,
         zoneId: Int? = null,
@@ -61,6 +62,7 @@ class CheckInUseCase @Inject constructor(
     ): Flow<NetworkResult<AttendanceRecord>> {
 
         val request = AttendanceRequest(
+            shift_id = shift_id,
             checkin_time = now(),
             checkin_coordinates = "$latitude,$longitude",
             checkin_zone_id = zoneId,
