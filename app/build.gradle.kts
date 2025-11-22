@@ -250,6 +250,9 @@ dependencies {
     // Coil
     implementation(libs.coil.compose)
 
+    //Location Service
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+
     // Accompanist
     implementation(libs.accompanist.placeholder.material3)
     implementation(libs.accompanist.systemuicontroller)

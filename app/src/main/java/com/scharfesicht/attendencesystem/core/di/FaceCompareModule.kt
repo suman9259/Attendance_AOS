@@ -1,4 +1,4 @@
-package com.scharfesicht.attendencesystem.di
+package com.scharfesicht.attendencesystem.core.di
 
 import android.content.Context
 import com.amazonaws.regions.Regions

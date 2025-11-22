@@ -16,15 +16,7 @@ class AuthInterceptor @Inject constructor(
     companion object {
         private const val HEADER_AUTHORIZATION = "Authorization"
         private const val HEADER_ACCEPT = "Accept"
-        private const val HEADER_CONTENT_TYPE = "Content-Type"
-        private const val HEADER_APP_VERSION = "X-App-Version"
-        private const val HEADER_DEVICE_TYPE = "X-Device-Type"
         private const val HEADER_LANGUAGE = "lang"
-        private const val HEADER_PLATFORM = "X-Platform"
-        private const val HEADER_BUILD_NUMBER = "X-Build-Number"
-        private const val CONTENT_TYPE_JSON = "multipart/form-data"
-        private const val DEVICE_TYPE = "Android"
-        private const val PLATFORM = "android"
         private const val COMPANY_CODE = "code"
     }
 
@@ -38,11 +30,9 @@ class AuthInterceptor @Inject constructor(
                     addHeader(HEADER_AUTHORIZATION, "Bearer $it")
                 }
                 addHeader(HEADER_ACCEPT, "application/json")
-                addHeader(HEADER_CONTENT_TYPE, CONTENT_TYPE_JSON)
-//                addHeader(HEADER_APP_VERSION, BuildConfig.VERSION_NAME)
-//                addHeader(HEADER_BUILD_NUMBER, BuildConfig.VERSION_CODE.toString())
-//                addHeader(HEADER_DEVICE_TYPE, DEVICE_TYPE)
-//                addHeader(HEADER_PLATFORM, PLATFORM)
+                if (originalRequest.method != "GET") {
+                    addHeader("Content-Type", "multipart/form-data")
+                }
                 addHeader(COMPANY_CODE, BuildConfig.COMPANY_CODE)
                 addHeader(HEADER_LANGUAGE, "en")
                 method(originalRequest.method, originalRequest.body)

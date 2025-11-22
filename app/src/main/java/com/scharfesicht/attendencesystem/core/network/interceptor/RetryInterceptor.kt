@@ -21,48 +21,43 @@ class RetryInterceptor @Inject constructor(
     }
 
     override fun intercept(chain: Interceptor.Chain): Response {
-        val request = chain.request()
-        var response: Response? = null
-        var exception: IOException? = null
+        val originalRequest = chain.request()
         var tryCount = 0
+        var lastException: IOException? = null
 
-        while (tryCount < maxRetries) {
+        while (tryCount <= maxRetries) {
             try {
-                response?.close()
-                response = chain.proceed(request)
+                // PROCEED EXACTLY ONCE PER LOOP
+                val response = chain.proceed(originalRequest)
 
-                if (response.isSuccessful) {
-                    return response
-                }
+                // Success -> return immediately
+                if (response.isSuccessful) return response
 
+                // Server error -> retry
                 if (response.code in 500..599) {
                     Log.w(TAG, "Server error ${response.code}, retry $tryCount/$maxRetries")
-                    tryCount++
-                    if (tryCount < maxRetries) {
-                        response.close()
-                        applyBackoff(tryCount)
-                        continue
-                    }
+                    response.close()
+                    applyBackoff(tryCount++)
+                    continue
                 }
 
+                // Client errors = do NOT retry
                 return response
 
             } catch (e: IOException) {
-                exception = e
+                lastException = e
                 Log.w(TAG, "Network error: ${e.message}, retry $tryCount/$maxRetries")
 
-                if (isRetryableException(e)) {
-                    tryCount++
-                    if (tryCount < maxRetries) {
-                        applyBackoff(tryCount)
-                        continue
-                    }
+                if (!isRetryableException(e)) {
+                    throw e
                 }
-                throw e
+
+                // Retry
+                applyBackoff(tryCount++)
             }
         }
 
-        return response ?: throw (exception ?: IOException("Failed after $maxRetries retries"))
+        throw lastException ?: IOException("Failed after $maxRetries retries")
     }
 
     private fun isRetryableException(exception: IOException): Boolean {
@@ -71,21 +66,14 @@ class RetryInterceptor @Inject constructor(
             is java.net.SocketException -> true
             is java.net.UnknownHostException -> false
             is javax.net.ssl.SSLException -> false
-            else -> exception.message?.let {
-                it.contains("timeout", ignoreCase = true) ||
-                        it.contains("connection reset", ignoreCase = true) ||
-                        it.contains("broken pipe", ignoreCase = true)
-            } ?: false
+            else -> exception.message?.contains("broken pipe", ignoreCase = true) ?: false
         }
     }
 
     private fun applyBackoff(attempt: Int) {
-        try {
-            val backoffDelay = INITIAL_BACKOFF_MS * BACKOFF_MULTIPLIER.toDouble()
-                .pow((attempt - 1).toDouble()).toLong()
-            Thread.sleep(backoffDelay)
-        } catch (e: InterruptedException) {
-            Thread.currentThread().interrupt()
-        }
+        if (attempt == 0) return
+        val delay = INITIAL_BACKOFF_MS * BACKOFF_MULTIPLIER.toDouble()
+            .pow((attempt - 1).toDouble()).toLong()
+        Thread.sleep(delay)
     }
 }
