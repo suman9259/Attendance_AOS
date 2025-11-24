@@ -42,6 +42,7 @@ interface IPreferenceStorage {
     val zoneLongitude: Flow<String?>
     val zoneRadius: Flow<String?>
     val zoneName: Flow<String?>
+    val zoneId: Flow<Int?>
 
     val isCheckedIn: Flow<Boolean>
     val lastCheckinTime: Flow<Long?>
@@ -50,7 +51,7 @@ interface IPreferenceStorage {
     suspend fun saveUserShifts(shiftsJson: String)
     suspend fun saveShiftsLastUpdated(timestamp: Long)
 
-    suspend fun saveZoneData(latitude: String, longitude: String, radius: String, name: String)
+    suspend fun saveZoneData(latitude: String, longitude: String, radius: String, name: String, zoneId: Int)
     suspend fun clearZoneData()
 
     suspend fun setCheckedIn(value: Boolean)

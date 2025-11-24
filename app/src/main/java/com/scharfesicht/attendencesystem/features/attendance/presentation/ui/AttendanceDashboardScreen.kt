@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -41,6 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import com.scharfesicht.attendencesystem.features.attendance.presentation.viewmodel.PunchFlowState
+import kotlinx.coroutines.delay
 import sa.gov.moi.absherinterior.R
 import sa.gov.moi.absherinterior.components.*
 import sa.gov.moi.absherinterior.models.AppMessage
@@ -58,6 +60,7 @@ fun AttendanceDashboardScreen(
     val uiState by viewModel.uiState.collectAsState()
     val selectedTab by viewModel.selectedTab.collectAsState()
     val flowState by viewModel.flowState.collectAsState()
+    val toastMessage by viewModel.toast.collectAsState(initial = null)
 
     // ─────────────────────────────
     // CAMERA: TakePicturePreview()  (NO FILE / NO FILEPROVIDER)
@@ -94,6 +97,12 @@ fun AttendanceDashboardScreen(
             requestLocation(context, viewModel)
         } else {
             viewModel.onLocationError("Location permission denied")
+        }
+    }
+
+    LaunchedEffect(toastMessage) {
+        toastMessage?.let { msg ->
+            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -188,14 +197,6 @@ fun AttendanceDashboardScreen(
         }
     )
 
-    // If you have native toast or Absher message system, trigger from here
-    LaunchedEffect(uiState.showSuccessToast, uiState.showErrorToast) {
-        if (uiState.showSuccessToast || uiState.showErrorToast) {
-            // You already store AppMessage in uiState.errorMessage / successMessage
-            // Just notify the host app or show Snackbar/Toast here if needed.
-            viewModel.onToastShown()
-        }
-    }
 }
 
 /**
@@ -435,7 +436,7 @@ fun PunchInOutCard(
                         cornerSize = CardSize.MEDIUM,
                         cardColor = colorResource(R.color.green_main),
                         onCardClicked = {
-                            if (enablePunchIn) onPunchIn()
+                           /* if (enablePunchIn) */onPunchIn()
                         },
                         cardContent = {
                             Column(
@@ -450,7 +451,7 @@ fun PunchInOutCard(
                                     iconSize = 24,
                                     tint = Color.White,
                                     onClick = {
-                                        if (enablePunchIn) onPunchIn()
+                                        /*if (enablePunchIn)*/ onPunchIn()
                                     },
                                     showContainer = false
                                 )
@@ -469,13 +470,14 @@ fun PunchInOutCard(
                     //  PUNCH OUT BUTTON
                     // -----------------------------
                     val enablePunchOut = isCheckedIn && !isPunchingIn && !isPunchingOut
+                    // TODO : Could we add toast on already punch in or punch in first.
 
                     MOICard(
                         modifier = Modifier.weight(1f),
                         cornerSize = CardSize.MEDIUM,
                         cardColor = colorResource(R.color.primary_main),
                         onCardClicked = {
-                            if (enablePunchOut) onPunchOut()
+                            /*if (enablePunchOut)*/ onPunchOut()
                         },
                         cardContent = {
                             Column(
@@ -489,7 +491,7 @@ fun PunchInOutCard(
                                     icon = R.drawable.ic_exit_app,
                                     iconSize = 24,
                                     tint = Color.White,
-                                    onClick = { if (enablePunchOut) onPunchOut() },
+                                    onClick = { /*if (enablePunchOut)*/ onPunchOut() },
                                     showContainer = false
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))

@@ -1,13 +1,16 @@
 package com.scharfesicht.attendencesystem.features.attendance.presentation.viewmodel
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint
 import com.scharfesicht.attendencesystem.core.datastore.IPreferenceStorage
 import com.scharfesicht.attendencesystem.core.network.NetworkResult
 import com.scharfesicht.attendencesystem.core.network.TokenManager
+import com.scharfesicht.attendencesystem.features.attendance.domain.model.AttendanceRecord
 import com.scharfesicht.attendencesystem.features.attendance.domain.model.LoginData
 import com.scharfesicht.attendencesystem.features.attendance.domain.model.Shift
 import com.scharfesicht.attendencesystem.features.attendance.domain.model.ShiftRule
@@ -23,6 +26,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -104,9 +108,13 @@ class AttendanceDashboardViewModel @Inject constructor(
     // Current punch session
     private val _session = MutableStateFlow<PunchSession?>(null)
 
+    private val _toast = MutableSharedFlow<String>()
+    val toast = _toast
+
     // Debounce
     private var lastPunchInClick = 0L
     private var lastPunchOutClick = 0L
+
 
     init {
         safeExecute("initializeApp") { initializeApp() }
@@ -180,6 +188,7 @@ class AttendanceDashboardViewModel @Inject constructor(
                 defaultValue = MAX_DISTANCE_METERS,
                 description = "zone radius"
             )
+            val zoneId = safeGetPreference(preferenceStorage.zoneId, 0, "zoneRadius")
 
             val shiftsJson = safeGetPreference(
                 preferenceStorage.userShiftsJson,
@@ -202,6 +211,7 @@ class AttendanceDashboardViewModel @Inject constructor(
                     allShifts = shifts,
                     profileImageUrl = profileImageUrl,
                     userName = userName,
+                    zoneId = zoneId,
                     expectedLatitude = zoneLat,
                     expectedLongitude = zoneLon,
                     maxDistanceMeters = zoneRadius,
@@ -323,7 +333,7 @@ class AttendanceDashboardViewModel @Inject constructor(
                                         userName = loginData.full_name,
                                         expectedLatitude = safeParseDouble(zone?.zone_latitude, 0.0, "zone latitude"),
                                         expectedLongitude = safeParseDouble(zone?.zone_longitude, 0.0, "zone longitude"),
-
+                                        zoneId = zone?.id ?: 0,
                                         maxDistanceMeters = safeParseDouble(
                                             zone?.zone_radius,
                                             MAX_DISTANCE_METERS,
@@ -393,7 +403,8 @@ class AttendanceDashboardViewModel @Inject constructor(
                         latitude = lat.toString(),
                         longitude = lon.toString(),
                         radius = radiusMeters.toString(),
-                        name = zone.zone_name_lang
+                        name = zone.zone_name_lang,
+                        zoneId = zone.id
                     )
 
                 } catch (e: Exception) {
@@ -475,7 +486,8 @@ class AttendanceDashboardViewModel @Inject constructor(
 
     fun onToastShown() {
         viewModelScope.launch {
-            delay(3000)
+            delay(2000)
+//            resetFlow()
             _uiState.update {
                 it.copy(
                     showSuccessToast = false,
@@ -525,10 +537,7 @@ class AttendanceDashboardViewModel @Inject constructor(
 
     private fun startPunch(type: PunchType) {
         try {
-            _uiState.update { it.copy(
-                isLoading = true,
-                successMessage = "Checking your location."
-            ) }
+
             val now = System.currentTimeMillis()
             if (type == PunchType.IN) {
                 if (now - lastPunchInClick < CLICK_DEBOUNCE_MS) return
@@ -537,25 +546,26 @@ class AttendanceDashboardViewModel @Inject constructor(
                 if (now - lastPunchOutClick < CLICK_DEBOUNCE_MS) return
                 lastPunchOutClick = now
             }
+            _uiState.update { it.copy(
+                isLoading = true,
+                successMessage = "Checking your location.",
+            ) }
 
             val state = _uiState.value
             val currentShift = state.currentShift
             val shiftRule = currentShift?.shift_rule?.firstOrNull()
 
             if (shiftRule == null) {
-                _uiState.update { it.copy(isLoading = false) }
                 showError("No shift assigned. Please contact your administrator.")
                 return
             }
 
             if (type == PunchType.IN && state.isCheckedIn) {
-                _uiState.update { it.copy(isLoading = false) }
                 showError("You are already punched in. Please punch out first.")
                 return
             }
 
             if (type == PunchType.OUT && !state.isCheckedIn) {
-                _uiState.update { it.copy(isLoading = false) }
                 showError("You are not punched in. Please punch in first.")
                 return
             }
@@ -774,6 +784,7 @@ class AttendanceDashboardViewModel @Inject constructor(
         val session = _session.value
         val location = session?.location
         val currentShift = _uiState.value.currentShift
+        val zoneId = _uiState.value.zoneId ?: 0
 
         if (session == null || location == null) {
             showError("Internal error. Please try again.")
@@ -785,7 +796,7 @@ class AttendanceDashboardViewModel @Inject constructor(
                 _flowState.value = PunchFlowState.PunchingIn
                 viewModelScope.launch {
                     try {// TODO: Check Shift_id Parameter.
-                        checkInUseCase(shift_id = currentShift?.shift_type ?: 1,location.first, location.second, 0).collect { result ->
+                        checkInUseCase(shift_id = currentShift?.shift_type ?: 1,location.first, location.second, zoneId).collect { result ->
                             handlePunchResult(result, isIn = true)
                         }
                     } catch (e: Exception) {
@@ -799,7 +810,7 @@ class AttendanceDashboardViewModel @Inject constructor(
                 _flowState.value = PunchFlowState.PunchingOut
                 viewModelScope.launch {
                     try {
-                        checkOutUseCase(location.first, location.second, 0).collect { result ->
+                        checkOutUseCase(location.first, location.second, zoneId).collect { result ->
                             handlePunchResult(result, isIn = false)
                         }
                     } catch (e: Exception) {
@@ -811,20 +822,26 @@ class AttendanceDashboardViewModel @Inject constructor(
         }
     }
 
-    private fun handlePunchResult(result: NetworkResult<*>, isIn: Boolean) {
+    private fun handlePunchResult(result: NetworkResult<AttendanceRecord>, isIn: Boolean) {
         when (result) {
             is NetworkResult.Success -> {
-                viewModelScope.launch { preferenceStorage.setCheckedIn(isIn) }
+
+                viewModelScope.launch {
+                    _toast.emit(
+                        if (isIn) "Successfully punched in"
+                        else "Successfully punched out"
+                    )
+                }
                 _uiState.update {
                     it.copy(
+                        isLoading = false,
                         isCheckedIn = isIn,
-                        successMessage = if (isIn) "✓ Punch in successful!" else "✓ Punch out successful!",
-                        showSuccessToast = true,
                         isPunchingIn = false,
                         isPunchingOut = false
                     )
                 }
-                resetFlow()
+                viewModelScope.launch { preferenceStorage.setCheckedIn(isIn) }
+//                resetFlow()
             }
 
             is NetworkResult.Error -> {
@@ -867,6 +884,7 @@ class AttendanceDashboardViewModel @Inject constructor(
     private fun showWarning(message: String) {
         _uiState.update {
             it.copy(
+                isLoading = false,
                 errorMessage = AppMessage.Error(
                     message = "⚠️ Warning\n$message",
                     messageKey = "warning_message"
@@ -1011,5 +1029,6 @@ data class DashboardUiState(
     val successMessage: String? = null,
     val errorMessage: AppMessage? = null,
     val showSuccessToast: Boolean = false,
-    val showErrorToast: Boolean = false
+    val showErrorToast: Boolean = false,
+    val zoneId: Int? = null
 )

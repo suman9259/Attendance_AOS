@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.io.IOException
+import java.time.ZoneId
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -130,6 +131,9 @@ class PreferenceStorageImpl @Inject constructor(
     override val zoneName: Flow<String?> = dataStore.data
         .mapWithCatch(null) { it[PreferenceKeys.ZONE_NAME] }
 
+    override val zoneId: Flow<Int?> = dataStore.data
+        .mapWithCatch(null) {it[PreferenceKeys.ZONE_ID]}
+
     override val isCheckedIn: Flow<Boolean> = dataStore.data
         .mapWithCatch(false) { it[PreferenceKeys.IS_CHECKED_IN] ?: false }
 
@@ -151,12 +155,13 @@ class PreferenceStorageImpl @Inject constructor(
         safeEdit { it[PreferenceKeys.SHIFTS_LAST_UPDATED] = timestamp }
     }
 
-    override suspend fun saveZoneData(latitude: String, longitude: String, radius: String, name: String) {
+    override suspend fun saveZoneData(latitude: String, longitude: String, radius: String, name: String,zoneId: Int) {
         safeEdit {
             it[PreferenceKeys.ZONE_LATITUDE] = latitude
             it[PreferenceKeys.ZONE_LONGITUDE] = longitude
             it[PreferenceKeys.ZONE_RADIUS] = radius
             it[PreferenceKeys.ZONE_NAME] = name
+            it[PreferenceKeys.ZONE_ID] = zoneId
         }
     }
 

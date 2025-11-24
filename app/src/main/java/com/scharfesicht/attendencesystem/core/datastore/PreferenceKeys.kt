@@ -31,6 +31,7 @@ object PreferenceKeys {
     val ZONE_LONGITUDE = stringPreferencesKey("zone_longitude")
     val ZONE_RADIUS = stringPreferencesKey("zone_radius")
     val ZONE_NAME = stringPreferencesKey("zone_name")
+    val ZONE_ID = intPreferencesKey("zone_id")
 
     // Check-in Status
     val IS_CHECKED_IN = booleanPreferencesKey("is_checked_in")
