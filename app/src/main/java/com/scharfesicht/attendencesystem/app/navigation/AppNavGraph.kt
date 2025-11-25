@@ -62,37 +62,32 @@ fun AppNavGraph() {
 
         // ========== FACE RECOGNITION SUCCESS ==========
         composable(
-            route = "${ScreenRoutes.FaceRecognitionSuccess.route}?${ScreenRoutes.FaceRecognitionSuccess.ARG_MESSAGE}={message}",
+            route = ScreenRoutes.FaceRecognitionSuccess.route,
             arguments = listOf(
-                navArgument(ScreenRoutes.FaceRecognitionSuccess.ARG_MESSAGE) {
-                    type = NavType.StringType
-                    defaultValue = "Successfully punched in"
+                navArgument(ScreenRoutes.FaceRecognitionSuccess.IS_SUCCESS) {
+                    type = NavType.BoolType
+                    defaultValue = false
                 }
             )
         ) { navBackStackEntry ->
-            val message = navBackStackEntry.arguments
-                ?.getString(ScreenRoutes.FaceRecognitionSuccess.ARG_MESSAGE)
-                ?: "Successfully punched in"
+            val isSuccess = navBackStackEntry.arguments
+                ?.getBoolean(ScreenRoutes.FaceRecognitionSuccess.IS_SUCCESS)
+                ?: false
 
             FaceRecognitionResultScreen(
-                navController = navController,
-                isSuccess = true,
-                message = message,
-                onDismiss = {
-                    navManager.navigateBack()
-                }
+                navManager = navManager,
+                isSuccess = isSuccess
             )
         }
 
         // ========== FACE RECOGNITION FAILED ==========
-        composable(ScreenRoutes.FaceRecognitionFailed.route) {
-            FaceNotRecognizedScreen(
-                navController = navController,
-                onTryAgain = {
-                    navManager.navigateBack()
-                }
-            )
-        }
+//        composable(ScreenRoutes.FaceRecognitionFailed.route) {
+//            FaceNotRecognizedScreen(
+//                onTryAgain = {
+//                    navManager.navigateBack()
+//                }
+//            )
+//        }
 
     }
 }

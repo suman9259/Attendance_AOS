@@ -61,6 +61,9 @@ fun AttendanceDashboardScreen(
     val selectedTab by viewModel.selectedTab.collectAsState()
     val flowState by viewModel.flowState.collectAsState()
     val toastMessage by viewModel.toast.collectAsState(initial = null)
+    val navigationEvent = viewModel.navigationEvent.collectAsState(initial = null)
+
+
 
     // ─────────────────────────────
     // CAMERA: TakePicturePreview()  (NO FILE / NO FILEPROVIDER)
@@ -81,6 +84,7 @@ fun AttendanceDashboardScreen(
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
+
         if (isGranted) {
             // Directly open camera preview
             cameraLauncher.launch(null)
@@ -105,6 +109,23 @@ fun AttendanceDashboardScreen(
             Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
         }
     }
+
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collect { event ->
+            when (event) {
+                is AttendanceDashboardViewModel.AttendanceNavigationEvent.FaceRecognitionSuccess -> {
+                    navManager.navigateWithArgs(
+                        ScreenRoutes.FaceRecognitionSuccess.route,
+                        mapOf(
+                            ScreenRoutes.FaceRecognitionSuccess.IS_SUCCESS to event.isSuccess
+                        )
+                    )
+                }
+
+            }
+        }
+    }
+
 
 
     LaunchedEffect(flowState) {
@@ -360,7 +381,6 @@ private fun AttendanceDashboardContent(
                     tabUnSelectedColor = colorResource(R.color.white),
                     onTabClick = {
                         onTabChanged(1)
-                        navManager?.navigate(ScreenRoutes.AttendanceLogs.route)
                     }
                 )
             }

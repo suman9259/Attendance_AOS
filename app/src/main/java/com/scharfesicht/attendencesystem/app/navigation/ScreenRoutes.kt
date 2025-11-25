@@ -9,8 +9,8 @@ sealed class ScreenRoutes(val route: String) {
     object AttendanceLogs : ScreenRoutes("attendance_logs")
 
     object FaceRecognitionSuccess : ScreenRoutes("face_recognition_success") {
-        const val ARG_MESSAGE = "message"
-        fun createRoute(message: String) = "$route?$ARG_MESSAGE=$message"
+        const val IS_SUCCESS = "is_success"
+        fun createRoute(message: String) = "$route?$IS_SUCCESS=$message"
     }
     object FaceRecognitionFailed : ScreenRoutes("face_recognition_failed")
 }

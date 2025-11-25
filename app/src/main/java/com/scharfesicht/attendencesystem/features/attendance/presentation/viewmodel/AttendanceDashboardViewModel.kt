@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint
+import com.scharfesicht.attendencesystem.app.navigation.ScreenRoutes
 import com.scharfesicht.attendencesystem.core.datastore.IPreferenceStorage
 import com.scharfesicht.attendencesystem.core.network.NetworkResult
 import com.scharfesicht.attendencesystem.core.network.TokenManager
@@ -110,6 +111,15 @@ class AttendanceDashboardViewModel @Inject constructor(
 
     private val _toast = MutableSharedFlow<String>()
     val toast = _toast
+    private val _navigationEvent = MutableSharedFlow<AttendanceNavigationEvent>()
+    val navigationEvent = _navigationEvent.asSharedFlow()
+
+    sealed class AttendanceNavigationEvent {
+        data class FaceRecognitionSuccess(val isSuccess: Boolean) : AttendanceNavigationEvent()
+
+    }
+
+
 
     // Debounce
     private var lastPunchInClick = 0L
@@ -827,9 +837,8 @@ class AttendanceDashboardViewModel @Inject constructor(
             is NetworkResult.Success -> {
 
                 viewModelScope.launch {
-                    _toast.emit(
-                        if (isIn) "Successfully punched in"
-                        else "Successfully punched out"
+                    _navigationEvent.emit(
+                        AttendanceNavigationEvent.FaceRecognitionSuccess(true)
                     )
                 }
                 _uiState.update {
@@ -841,10 +850,16 @@ class AttendanceDashboardViewModel @Inject constructor(
                     )
                 }
                 viewModelScope.launch { preferenceStorage.setCheckedIn(isIn) }
+
 //                resetFlow()
             }
 
             is NetworkResult.Error -> {
+                viewModelScope.launch {
+                    _navigationEvent.emit(
+                        AttendanceNavigationEvent.FaceRecognitionSuccess(false)
+                    )
+                }
                 showError(result.error.message ?: "Punch operation failed")
             }
 

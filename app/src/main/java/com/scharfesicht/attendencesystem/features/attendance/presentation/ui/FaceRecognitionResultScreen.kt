@@ -14,10 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -25,9 +22,10 @@ import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint
 import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getFaceNotRecognizedText
 import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getSuccessfullyPunchedInText
 import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getTryAgainText
+import com.scharfesicht.attendencesystem.app.navigation.NavManager
+import com.scharfesicht.attendencesystem.app.navigation.ScreenRoutes
 import sa.gov.moi.absherinterior.R
 import sa.gov.moi.absherinterior.components.*
-import sa.gov.moi.absherinterior.theme.AbsherInteriorTheme
 import sa.gov.moi.absherinterior.utils.*
 import kotlinx.coroutines.delay
 
@@ -35,17 +33,15 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun FaceRecognitionResultScreen(
-    navController: NavController,
+    navManager: NavManager,
     isSuccess: Boolean = false,
-    message: String = "",
     onTryAgain: () -> Unit = {},
-    onDismiss: () -> Unit = {}
 ) {
     // Auto dismiss success after 3 seconds
     if (isSuccess) {
         LaunchedEffect(key1 = isSuccess) {
             delay(3000)
-            onDismiss()
+            navManager.navigateBack()
         }
     }
 
@@ -66,7 +62,8 @@ fun FaceRecognitionResultScreen(
         contentPadding = PaddingValues(AppPadding.NON.padding()),
         successComposable = {
             if (isSuccess) {
-                SuccessContent(message = message.ifBlank { /*stringResource(R.string.successfully_punched_in)*/ "Successfully punched in"})
+                // TODO: How to get Success or Failed message from sdk?
+                SuccessContent(navManager = navManager)
             } else {
                 FailureContent(onTryAgain = onTryAgain)
             }
@@ -75,7 +72,7 @@ fun FaceRecognitionResultScreen(
 }
 
 @Composable
-private fun SuccessContent(message: String) {
+private fun SuccessContent(navManager: NavManager) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -83,7 +80,7 @@ private fun SuccessContent(message: String) {
         contentAlignment = Alignment.TopCenter
     ) {
         CustomButton(
-            buttonTitle = message,
+            buttonTitle = getSuccessfullyPunchedInText() ?: "Successfully punched in",
             titleStyle = Typography().bodyLarge.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold),
             titleColor = Color.White,
             buttonIcon = R.drawable.ic_info_outline_white_24dp,
@@ -97,7 +94,10 @@ private fun SuccessContent(message: String) {
             topRightRadius = 12.dp,
             bottomLeftRadius = 12.dp,
             bottomRightRadius = 12.dp,
-            onClick = {}
+            onClick = {
+                navManager.navigate(ScreenRoutes.AttendanceLogs.route)
+
+            }
         )
     }
 }
@@ -150,7 +150,6 @@ private fun FailureContent(onTryAgain: () -> Unit) {
 
 @Composable
 fun FaceNotRecognizedScreen(
-    navController: NavController?,
     onTryAgain: () -> Unit = {}
 ) {
     MainScreenView(
