@@ -1,5 +1,6 @@
 package com.scharfesicht.attendencesystem.app.navigation
 
+import android.util.Log
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -62,7 +63,8 @@ fun AppNavGraph() {
 
         // ========== FACE RECOGNITION SUCCESS ==========
         composable(
-            route = ScreenRoutes.FaceRecognitionSuccess.route,
+            route = "${ScreenRoutes.FaceRecognitionSuccess.route}?" +
+                    "${ScreenRoutes.FaceRecognitionSuccess.IS_SUCCESS}={${ScreenRoutes.FaceRecognitionSuccess.IS_SUCCESS}}",
             arguments = listOf(
                 navArgument(ScreenRoutes.FaceRecognitionSuccess.IS_SUCCESS) {
                     type = NavType.BoolType
@@ -70,9 +72,11 @@ fun AppNavGraph() {
                 }
             )
         ) { navBackStackEntry ->
+
             val isSuccess = navBackStackEntry.arguments
-                ?.getBoolean(ScreenRoutes.FaceRecognitionSuccess.IS_SUCCESS)
-                ?: false
+                ?.getBoolean(ScreenRoutes.FaceRecognitionSuccess.IS_SUCCESS) ?: false
+
+            Log.d("AttendanceScreen", "FaceRecognitionSuccess received: $isSuccess")
 
             FaceRecognitionResultScreen(
                 navManager = navManager,

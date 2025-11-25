@@ -30,13 +30,10 @@ class AttendanceLogsViewModel @Inject constructor(
 
         private val DATE_TIME_FORMATTER =
             SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-
         private val DAY_NAME_FORMATTER =
             SimpleDateFormat("EEE", Locale.getDefault())
-
         private val DAY_NUMBER_FORMATTER =
             SimpleDateFormat("dd", Locale.getDefault())
-
         private val TIME_FORMATTER =
             SimpleDateFormat("hh:mm a", Locale.getDefault())
     }
@@ -46,12 +43,6 @@ class AttendanceLogsViewModel @Inject constructor(
 
     private val _selectedTab = MutableStateFlow(0)
     val selectedTab: StateFlow<Int> = _selectedTab.asStateFlow()
-
-    private val _selectedAttendanceType = MutableStateFlow("Attendance")
-    val selectedAttendanceType: StateFlow<String> = _selectedAttendanceType.asStateFlow()
-
-    private val _selectedMonth = MutableStateFlow("November")
-    val selectedMonth: StateFlow<String> = _selectedMonth.asStateFlow()
 
     private val _isDarkMode = MutableStateFlow(false)
     val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
@@ -63,6 +54,9 @@ class AttendanceLogsViewModel @Inject constructor(
         loadAttendanceLogs()
     }
 
+    // ----------------------------------------------------
+    // LOAD THEME
+    // ----------------------------------------------------
     private fun loadUserTheme() {
         viewModelScope.launch {
             runCatching {
@@ -75,20 +69,25 @@ class AttendanceLogsViewModel @Inject constructor(
         }
     }
 
+    // ----------------------------------------------------
+    // MAIN: LOAD ATTENDANCE LOGS WITH SHIMMER
+    // ----------------------------------------------------
     fun loadAttendanceLogs() {
         loadJob?.cancel()
 
         loadJob = viewModelScope.launch {
 
+            // This allows shimmer to show
             _uiState.value = _uiState.value.copy(
                 isLoading = true,
-                screenState = ScreenState.Loading,
+                screenState = ScreenState.Success(emptyList<AttendanceLog>()),
                 errorMessage = null
             )
 
             getLatestRecordUseCase()
                 .catch { e ->
                     Log.e(TAG, "Flow exception", e)
+
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         screenState = ScreenState.Error("Something went wrong"),
@@ -102,7 +101,10 @@ class AttendanceLogsViewModel @Inject constructor(
                     when (result) {
 
                         is NetworkResult.Loading -> {
-                            _uiState.value = _uiState.value.copy(isLoading = true)
+                            _uiState.value = _uiState.value.copy(
+                                isLoading = true,
+                                screenState = ScreenState.Success(emptyList<AttendanceLog>())
+                            )
                         }
 
                         is NetworkResult.Success -> {
@@ -133,26 +135,27 @@ class AttendanceLogsViewModel @Inject constructor(
         }
     }
 
-    // ----------------------------------------------------------------------
+    // ----------------------------------------------------
     // SAFE CONVERSION
-    // ----------------------------------------------------------------------
-    private fun convertRecordToLogSafe(record: AttendanceRecord): AttendanceLog = try {
-        convertRecordToLog(record)
-    } catch (e: Exception) {
-        Log.e(TAG, "convertRecordToLog crashed", e)
-        AttendanceLog(
-            dayName = "--",
-            dayNumber = "--",
-            punchInTime = "--",
-            punchOutTime = "--",
-            workingHours = "--",
-            status = AttendanceLogStatus.PRESENT,
-            uuid = record.uuid,
-            checkinMediaUrl = record.checkin_media_url ?: "",
-            checkoutMediaUrl = record.checkout_media_url ?: "",
-            shiftName = record.shift?.shift_name_lang ?: "N/A"
-        )
-    }
+    // ----------------------------------------------------
+    private fun convertRecordToLogSafe(record: AttendanceRecord): AttendanceLog =
+        try {
+            convertRecordToLog(record)
+        } catch (e: Exception) {
+            Log.e(TAG, "convertRecordToLog crashed", e)
+            AttendanceLog(
+                dayName = "--",
+                dayNumber = "--",
+                punchInTime = "--",
+                punchOutTime = "--",
+                workingHours = "--",
+                status = AttendanceLogStatus.PRESENT,
+                uuid = record.uuid,
+                checkinMediaUrl = record.checkin_media_url ?: "",
+                checkoutMediaUrl = record.checkout_media_url ?: "",
+                shiftName = record.shift?.shift_name_lang ?: "N/A"
+            )
+        }
 
     private fun convertRecordToLog(record: AttendanceRecord): AttendanceLog {
         val checkinDate = parseDate(record.checkin_time)
@@ -166,9 +169,7 @@ class AttendanceLogsViewModel @Inject constructor(
 
         val workingHours = if (checkoutDate != null) {
             calculateWorkingHours(checkinDate, checkoutDate)
-        } else {
-            ""
-        }
+        } else ""
 
         return AttendanceLog(
             dayName = dayName,
@@ -184,9 +185,9 @@ class AttendanceLogsViewModel @Inject constructor(
         )
     }
 
-    // ----------------------------------------------------------------------
-    // SAFE DATE HANDLING
-    // ----------------------------------------------------------------------
+    // ----------------------------------------------------
+    // DATE UTILITIES
+    // ----------------------------------------------------
     private fun parseDate(date: String?): Date {
         if (date.isNullOrBlank()) return Date()
         return runCatching { DATE_TIME_FORMATTER.parse(date) }.getOrNull() ?: Date()
@@ -209,25 +210,14 @@ class AttendanceLogsViewModel @Inject constructor(
     }
 
     private fun determineAttendanceStatus(record: AttendanceRecord): AttendanceLogStatus {
-        return if (record.checkout_time == null) AttendanceLogStatus.PRESENT
-        else AttendanceLogStatus.PRESENT
+        return AttendanceLogStatus.PRESENT
     }
 
-    // ----------------------------------------------------------------------
-    // UI Actions
-    // ----------------------------------------------------------------------
+    // ----------------------------------------------------
+    // UI ACTIONS
+    // ----------------------------------------------------
     fun onTabChanged(tab: Int) {
         _selectedTab.value = tab
-    }
-
-    fun onAttendanceTypeChanged(type: String) {
-        _selectedAttendanceType.value = type
-        loadAttendanceLogs()
-    }
-
-    fun onMonthChanged(month: String) {
-        _selectedMonth.value = month
-        loadAttendanceLogs()
     }
 
     fun refresh() = loadAttendanceLogs()

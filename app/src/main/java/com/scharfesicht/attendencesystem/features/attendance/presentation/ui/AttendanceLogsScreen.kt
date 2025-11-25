@@ -32,7 +32,6 @@ import sa.gov.moi.absherinterior.theme.small
 import sa.gov.moi.absherinterior.theme.xSmall
 import sa.gov.moi.absherinterior.utils.*
 
-
 @Composable
 fun AttendanceLogsScreen(
     navManager: NavManager,
@@ -43,7 +42,7 @@ fun AttendanceLogsScreen(
     val isDarkMode by viewModel.isDarkMode.collectAsState()
 
     MainScreenView(
-        uiState = uiState.screenState,
+        uiState = uiState.screenState,  // ALWAYS Success/Success(logs)/Error
         topBar = {
             AbsherAppBar(
                 showEventTheme = false,
@@ -59,7 +58,8 @@ fun AttendanceLogsScreen(
         contentPadding = PaddingValues(AppPadding.NON.padding()),
         message = uiState.errorMessage,
         successComposable = {
-            // Show shimmer while loading
+
+            // 👉 Show SHIMMER here when ViewModel says loading
             if (uiState.isLoading) {
                 AttendanceLogsShimmer()
             } else {
@@ -81,13 +81,13 @@ private fun AttendanceLogsShimmer() {
             .fillMaxSize()
             .padding(horizontal = 16.dp)
     ) {
-        // Tab shimmer
+        // ─────────────────── Tabs Shimmer ───────────────────
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp)
                 .padding(vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Box(
                 modifier = Modifier
@@ -103,51 +103,36 @@ private fun AttendanceLogsShimmer() {
             )
         }
 
-        16.0.MOIVerticalSpacer()
+        20.0.MOIVerticalSpacer()
 
-        // Header shimmer
+        // ─────────────────── Header Shimmer ───────────────────
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Box(
                 modifier = Modifier
                     .weight(1.2f)
-                    .height(16.dp)
+                    .height(18.dp)
                     .shimmerEffect()
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(16.dp)
-                    .shimmerEffect()
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(16.dp)
-                    .shimmerEffect()
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(16.dp)
-                    .shimmerEffect()
-            )
+            repeat(3) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(18.dp)
+                        .shimmerEffect()
+                )
+            }
         }
 
-        8.0.MOIVerticalSpacer()
+        12.0.MOIVerticalSpacer()
 
-        // List items shimmer
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(5) {
+        // ─────────────────── List Shimmer Rows ───────────────────
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            items(6) {
                 AttendanceLogItemShimmer()
             }
         }
@@ -158,13 +143,15 @@ private fun AttendanceLogsShimmer() {
 private fun AttendanceLogItemShimmer() {
     MOICard(
         cornerSize = CardSize.MEDIUM,
-        padding = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
+        padding = PaddingValues(12.dp),
         cardContent = {
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+
                 // Date card shimmer
                 Box(
                     modifier = Modifier
@@ -173,9 +160,7 @@ private fun AttendanceLogItemShimmer() {
                         .shimmerEffect()
                 )
 
-                Spacer(modifier = Modifier.width(8.dp))
-
-                // Punch in shimmer
+                // Punch In shimmer
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -183,9 +168,7 @@ private fun AttendanceLogItemShimmer() {
                         .shimmerEffect()
                 )
 
-                Spacer(modifier = Modifier.width(8.dp))
-
-                // Punch out shimmer
+                // Punch Out shimmer
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -193,9 +176,7 @@ private fun AttendanceLogItemShimmer() {
                         .shimmerEffect()
                 )
 
-                Spacer(modifier = Modifier.width(8.dp))
-
-                // Working hours shimmer
+                // Working Hours shimmer
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -219,6 +200,8 @@ private fun AttendanceLogsContent(
             .fillMaxSize()
             .padding(horizontal = 16.dp)
     ) {
+
+        // ─────────────────── Tabs ───────────────────
         CustomTabRow(
             selectedTabIndex = selectedTab,
             tabType = TabType.OUTLINED,
@@ -227,7 +210,7 @@ private fun AttendanceLogsContent(
             tabs = {
                 CustomIndicatorTab(
                     isSelected = selectedTab == 0,
-                    tabTitle = getMarkAttendanceTitle() ?:"",
+                    tabTitle = getMarkAttendanceTitle() ?: "",
                     tabTitleStyle = Typography().small,
                     tabSelectedColor = colorResource(R.color.primary_main),
                     tabUnSelectedColor = colorResource(R.color.white),
@@ -235,7 +218,7 @@ private fun AttendanceLogsContent(
                 )
                 CustomIndicatorTab(
                     isSelected = selectedTab == 1,
-                    tabTitle = getPermissionTitle()?:"",
+                    tabTitle = getPermissionTitle() ?: "",
                     tabTitleStyle = Typography().small,
                     tabSelectedColor = colorResource(R.color.primary_main),
                     tabUnSelectedColor = colorResource(R.color.white),
@@ -250,6 +233,7 @@ private fun AttendanceLogsContent(
 
         8.0.MOIVerticalSpacer()
 
+        // ─────────────────── Logs List ───────────────────
         attendanceLogs?.let { logs ->
             if (logs.isEmpty()) {
                 Box(
@@ -282,19 +266,19 @@ private fun AttendanceTableHeader() {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            text = getDateText() ?:"",
+            text = getDateText() ?: "",
             modifier = Modifier.weight(1.2f),
             style = Typography().small.copy(fontWeight = FontWeight.Bold),
             color = colorResource(R.color.content_fg_color)
         )
         Text(
-            text = getPunchInCardTitle() ?:"",
+            text = getPunchInCardTitle() ?: "",
             modifier = Modifier.weight(1f),
             style = Typography().small.copy(fontWeight = FontWeight.Bold),
             color = colorResource(R.color.content_fg_color)
         )
         Text(
-            text = getPunchOutCardTitle() ?:"",
+            text = getPunchOutCardTitle() ?: "",
             modifier = Modifier.weight(1f),
             style = Typography().small.copy(fontWeight = FontWeight.Bold),
             color = colorResource(R.color.content_fg_color)
@@ -309,9 +293,7 @@ private fun AttendanceTableHeader() {
 }
 
 @Composable
-private fun AttendanceLogItem(
-    log: AttendanceLog
-) {
+private fun AttendanceLogItem(log: AttendanceLog) {
     val statusColor = when (log.status) {
         AttendanceLogStatus.PRESENT -> colorResource(R.color.green_main_400)
         AttendanceLogStatus.LATE_LESS_THAN_1H -> colorResource(R.color.card_bg_color)
@@ -324,11 +306,13 @@ private fun AttendanceLogItem(
         cornerSize = CardSize.MEDIUM,
         padding = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
         cardContent = {
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+
                 // Date Card
                 MOICard(
                     cornerSize = CardSize.LARGE,
@@ -355,7 +339,7 @@ private fun AttendanceLogItem(
                     }
                 )
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(Modifier.width(8.dp))
 
                 // Punch In
                 Row(
@@ -376,15 +360,11 @@ private fun AttendanceLogItem(
                             color = colorResource(R.color.content_fg_color)
                         )
                     } else {
-                        Text(
-                            text = "----",
-                            style = Typography().small,
-                            color = colorResource(R.color.dark_gray_100)
-                        )
+                        Text("----", style = Typography().small, color = colorResource(R.color.dark_gray_100))
                     }
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(Modifier.width(8.dp))
 
                 // Punch Out
                 Row(
@@ -405,15 +385,11 @@ private fun AttendanceLogItem(
                             color = colorResource(R.color.content_fg_color)
                         )
                     } else {
-                        Text(
-                            text = "----",
-                            style = Typography().small,
-                            color = colorResource(R.color.dark_gray_400)
-                        )
+                        Text("----", style = Typography().small, color = colorResource(R.color.dark_gray_400))
                     }
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(Modifier.width(8.dp))
 
                 // Working Hours
                 Text(

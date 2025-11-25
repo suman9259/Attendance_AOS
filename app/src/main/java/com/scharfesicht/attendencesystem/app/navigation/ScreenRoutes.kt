@@ -10,7 +10,8 @@ sealed class ScreenRoutes(val route: String) {
 
     object FaceRecognitionSuccess : ScreenRoutes("face_recognition_success") {
         const val IS_SUCCESS = "is_success"
-        fun createRoute(message: String) = "$route?$IS_SUCCESS=$message"
+        fun createRoute(isSuccess: Boolean) =
+            "$route?$IS_SUCCESS=$isSuccess"
     }
     object FaceRecognitionFailed : ScreenRoutes("face_recognition_failed")
 }

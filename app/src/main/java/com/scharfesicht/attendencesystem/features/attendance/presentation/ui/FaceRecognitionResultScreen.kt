@@ -34,19 +34,23 @@ import kotlinx.coroutines.delay
 @Composable
 fun FaceRecognitionResultScreen(
     navManager: NavManager,
-    isSuccess: Boolean = false,
-    onTryAgain: () -> Unit = {},
+    isSuccess: Boolean,
+    onTryAgain: () -> Unit = {
+        navManager.navigateBack()
+    },
 ) {
+    // TODO:  FIx Punch out text.
     // Auto dismiss success after 3 seconds
-    if (isSuccess) {
-        LaunchedEffect(key1 = isSuccess) {
-            delay(3000)
-            navManager.navigateBack()
-        }
-    }
+//    if (isSuccess) {
+//        LaunchedEffect(key1 = isSuccess) {
+//            delay(3000)
+//            navManager.navigateBack()
+//        }
+//    }
 
     MainScreenView(
         uiState = ScreenState.Success(true),
+        // TODO: Add back click
         topBar ={
             AbsherAppBar(
                 showEventTheme = false,
@@ -77,7 +81,7 @@ private fun SuccessContent(navManager: NavManager) {
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 24.dp),
-        contentAlignment = Alignment.TopCenter
+        contentAlignment = Alignment.Center
     ) {
         CustomButton(
             buttonTitle = getSuccessfullyPunchedInText() ?: "Successfully punched in",

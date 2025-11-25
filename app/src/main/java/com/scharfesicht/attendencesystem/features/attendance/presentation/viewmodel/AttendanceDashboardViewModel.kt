@@ -750,12 +750,18 @@ class AttendanceDashboardViewModel @Inject constructor(
                     )
 
                     if (!faceResult.isSame || faceResult.accuracy < FACE_MATCH_THRESHOLD) {
-                        showError(
-                            "Face verification failed!\n\n" +
-                                    "Match accuracy: ${faceResult.accuracy.toInt()}%\n" +
-                                    "Required: ${FACE_MATCH_THRESHOLD.toInt()}%\n\n" +
-                                    "Please try again with better lighting."
-                        )
+                        viewModelScope.launch {
+                            _navigationEvent.emit(
+                                AttendanceNavigationEvent.FaceRecognitionSuccess(false)
+                            )
+                        }
+                        resetFlow()
+//                        showError(
+//                            "Face verification failed!\n\n" +
+//                                    "Match accuracy: ${faceResult.accuracy.toInt()}%\n" +
+//                                    "Required: ${FACE_MATCH_THRESHOLD.toInt()}%\n\n" +
+//                                    "Please try again with better lighting."
+//                        )
                         return@launch
                     }
                 } else {
@@ -851,7 +857,7 @@ class AttendanceDashboardViewModel @Inject constructor(
                 }
                 viewModelScope.launch { preferenceStorage.setCheckedIn(isIn) }
 
-//                resetFlow()
+                resetFlow()
             }
 
             is NetworkResult.Error -> {
@@ -874,6 +880,9 @@ class AttendanceDashboardViewModel @Inject constructor(
         _flowState.value = PunchFlowState.Idle
         _uiState.update {
             it.copy(
+                isLoading = false,
+                successMessage = null,
+                errorMessage = null,
                 isPunchingIn = false,
                 isPunchingOut = false
             )

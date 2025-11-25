@@ -113,15 +113,15 @@ fun AttendanceDashboardScreen(
     LaunchedEffect(Unit) {
         viewModel.navigationEvent.collect { event ->
             when (event) {
-                is AttendanceDashboardViewModel.AttendanceNavigationEvent.FaceRecognitionSuccess -> {
-                    navManager.navigateWithArgs(
-                        ScreenRoutes.FaceRecognitionSuccess.route,
-                        mapOf(
-                            ScreenRoutes.FaceRecognitionSuccess.IS_SUCCESS to event.isSuccess
-                        )
-                    )
-                }
 
+                is AttendanceDashboardViewModel.AttendanceNavigationEvent.FaceRecognitionSuccess -> {
+
+                    navManager.navigate(
+                        ScreenRoutes.FaceRecognitionSuccess.createRoute(event.isSuccess)
+                    )
+
+                    Log.d("AttendanceScreen", "Navigating to FaceRecognitionSuccess with = ${event.isSuccess}")
+                }
             }
         }
     }
