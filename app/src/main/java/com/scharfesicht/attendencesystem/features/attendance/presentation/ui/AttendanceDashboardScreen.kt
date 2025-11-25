@@ -1,309 +1,531 @@
 package com.scharfesicht.attendencesystem.features.attendance.presentation.ui
 
-import android.annotation.SuppressLint
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.background
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.util.Log
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.material3.Typography
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.scharfesicht.attendencesystem.app.ui.componants.MainAppTopAppBar
-import com.scharfesicht.attendencesystem.app.ui.theme.AttendanceSystemTheme
-import com.scharfesicht.attendencesystem.features.attendance.domain.model.*
-import com.scharfesicht.attendencesystem.features.attendance.presentation.ui.components.*
-import com.scharfesicht.attendencesystem.features.attendance.presentation.viewmodel.*
-import com.scharfesicht.attendencesystem.features.facecompare.presentation.ui.FaceVerifyScreen
-import com.scharfesicht.attendencesystem.features.facecompare.presentation.viewmodel.FaceCompareViewModel
+import androidx.core.content.ContextCompat
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import com.google.android.gms.tasks.CancellationTokenSource
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getMarkAttendanceTitle
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getPermissionTitle
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getPunchCardSmallTitle
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getPunchCardTitle
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getPunchInCardTitle
+import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getPunchOutCardTitle
+import com.scharfesicht.attendencesystem.app.navigation.NavManager
+import com.scharfesicht.attendencesystem.app.navigation.ScreenRoutes
+import com.scharfesicht.attendencesystem.core.utils.toAmPm
+import com.scharfesicht.attendencesystem.features.attendance.domain.model.Shift
+import com.scharfesicht.attendencesystem.features.attendance.presentation.viewmodel.AttendanceDashboardViewModel
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
+import com.scharfesicht.attendencesystem.features.attendance.presentation.viewmodel.PunchFlowState
+import kotlinx.coroutines.delay
+import sa.gov.moi.absherinterior.R
+import sa.gov.moi.absherinterior.components.*
+import sa.gov.moi.absherinterior.models.AppMessage
+import sa.gov.moi.absherinterior.theme.base
+import sa.gov.moi.absherinterior.theme.small
+import sa.gov.moi.absherinterior.utils.*
+import java.lang.IllegalStateException
 
 @Composable
 fun AttendanceDashboardScreen(
-    viewModel: AttendanceDashboardViewModel = hiltViewModel(),
-    absherViewModel: AbsherViewModel = hiltViewModel(),
-    faceCompareViewModel: FaceCompareViewModel = hiltViewModel(),
-    isAbsherEnabled: Boolean
+    navManager: NavManager,
+    viewModel: AttendanceDashboardViewModel
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val punchLoading by viewModel.punchInOutLoading.collectAsState()
-
     val context = LocalContext.current
-    val showFaceScreen = remember { mutableStateOf(false) }
-    val punchType = remember { mutableStateOf("") } // "IN" / "OUT"
+    val uiState by viewModel.uiState.collectAsState()
+    val selectedTab by viewModel.selectedTab.collectAsState()
+    val flowState by viewModel.flowState.collectAsState()
+    val toastMessage by viewModel.toast.collectAsState(initial = null)
+    val navigationEvent = viewModel.navigationEvent.collectAsState(initial = null)
 
-    // OLD IMAGE URL from login response
-    val oldImageUrl = "https://hrmpro.time-365.com/storage/images/profile/time-365_188264/537304871511132025095607691581079ddb1.jpg"
-    LaunchedEffect(oldImageUrl) {
-        faceCompareViewModel.setOldImageUrl(oldImageUrl)
+
+
+    // ─────────────────────────────
+    // CAMERA: TakePicturePreview()  (NO FILE / NO FILEPROVIDER)
+    // ─────────────────────────────
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap: Bitmap? ->
+        if (bitmap != null) {
+            Log.d("AttendanceScreen", "Camera bitmap received: ${bitmap.width}x${bitmap.height}")
+            viewModel.onPhotoCaptured(bitmap)
+        } else {
+            Log.e("AttendanceScreen", "Camera returned null bitmap")
+            viewModel.onCameraError("Camera cancelled or failed")
+        }
     }
 
-    // -------------------------
-    // FACE SCREEN RESULT HANDLER
-    // -------------------------
-    if (showFaceScreen.value) {
-        FaceVerifyScreen(
-            onResult = { isMatch, accuracy ->
+    // Camera permission launcher
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
 
-                showFaceScreen.value = false
+        if (isGranted) {
+            // Directly open camera preview
+            cameraLauncher.launch(null)
+        } else {
+            viewModel.onCameraError("Camera permission denied")
+        }
+    }
 
-                if (isMatch) {
-                    if (punchType.value == "IN") {
-                        viewModel.punchIn()
-                    } else {
-                        viewModel.punchOut()
-                    }
-                } else {
-                    viewModel.showAlert(
-                        title = "Face Not Recognized",
-                        message = "Match score: $accuracy%\nTry again."
+    // Location permission launcher
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            requestLocation(context, viewModel)
+        } else {
+            viewModel.onLocationError("Location permission denied")
+        }
+    }
+
+    LaunchedEffect(toastMessage) {
+        toastMessage?.let { msg ->
+            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collect { event ->
+            when (event) {
+
+                is AttendanceDashboardViewModel.AttendanceNavigationEvent.FaceRecognitionSuccess -> {
+
+                    navManager.navigate(
+                        ScreenRoutes.FaceRecognitionSuccess.createRoute(event.isSuccess)
                     )
+
+                    Log.d("AttendanceScreen", "Navigating to FaceRecognitionSuccess with = ${event.isSuccess}")
                 }
-            }
-        )
-        return
-    }
-
-    // -------------------------
-    // MAIN DASHBOARD UI
-    // -------------------------
-    AttendanceDashboardContent(
-        state = uiState as? AttendanceDashboardUiState.Success ?: return,
-        onPunchIn = {
-            punchType.value = "IN"
-            showFaceScreen.value = true
-        },
-        onPunchOut = {
-            punchType.value = "OUT"
-            showFaceScreen.value = true
-        },
-        punchInOutLoading = punchLoading,
-        isArabic = absherViewModel.getCurrentLanguage() != "en",
-        onTabSelected = { AttendanceTab.MARK_ATTENDANCE },
-    )
-}
-
-@Composable
-fun AttendanceDashboardContent(
-    state: AttendanceDashboardUiState.Success,
-    modifier: Modifier = Modifier,
-    onTabSelected: (AttendanceTab) -> Unit,
-    onPunchIn: () -> Unit,
-    onPunchOut: () -> Unit,
-    punchInOutLoading: Boolean,
-    isArabic: Boolean,
-) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .background(MaterialTheme.colorScheme.surface)
-    ) {
-        // Tab Row
-        AttendanceTabRow(
-            selectedTab = state.selectedTab,
-            onTabSelected = onTabSelected,
-            isArabic = isArabic
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-
-        when (state.selectedTab) {
-            AttendanceTab.MARK_ATTENDANCE -> {
-                MarkAttendanceContent(
-                    shift = state.shift,
-                    onPunchIn = onPunchIn,
-                    onPunchOut = onPunchOut,
-                    loading = punchInOutLoading,
-                    isArabic = isArabic,
-                )
-            }
-
-            AttendanceTab.PERMISSION_APPLICATION -> {
-                PermissionApplicationContent(isArabic = isArabic)
             }
         }
     }
-}
 
-@SuppressLint("UnusedBoxWithConstraintsScope")
-@Composable
-fun AttendanceTabRow(
-    selectedTab: AttendanceTab,
-    onTabSelected: (AttendanceTab) -> Unit,
-    isArabic: Boolean
-) {
-    val textColorActive = MaterialTheme.colorScheme.primary
-    val textColorInactive = Color.Gray
 
-    val tabs = listOf(
-        AttendanceTab.MARK_ATTENDANCE to if (isArabic) "تسجيل الحضور" else "Mark Attendance",
-        AttendanceTab.PERMISSION_APPLICATION to if (isArabic) "طلب استئذان" else "Permission Application"
+
+    LaunchedEffect(flowState) {
+        when (flowState) {
+
+            is PunchFlowState.WaitingForLocation -> {
+                val granted = ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+
+                if (granted) {
+                    requestLocation(context, viewModel)
+                } else {
+                    locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                }
+            }
+
+            is PunchFlowState.WaitingForCamera -> {
+                val granted = ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.CAMERA
+                ) == PackageManager.PERMISSION_GRANTED
+
+                if (granted) {
+                    cameraLauncher.launch(null)
+                } else {
+                    cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                }
+            }
+
+            else -> Unit
+        }
+    }
+
+
+    // ─────────────────────────────
+    // MAIN SCREEN CONTENT
+    // ─────────────────────────────
+    MainScreenView(
+        uiState = uiState.screenState,
+        topBar = {
+            AbsherAppBar(
+                showEventTheme = false,
+                title = MiniAppEntryPoint.getServiceTitle(),
+                generalIcon = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_as_admin),
+                        contentDescription = "time attendance"
+                    )
+                }
+            )
+        },
+        contentPadding = PaddingValues(AppPadding.NON.padding()),
+
+        errorComposable = { msg ->
+            ErrorComponent(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                errorMessage = msg
+            )
+        },
+
+        message = when {
+            uiState.errorMessage != null -> uiState.errorMessage
+            uiState.successMessage != null -> AppMessage.Success(
+                message = uiState.successMessage ?: "",
+                messageKey = "success_toast"
+            )
+            else -> null
+        },
+
+        successComposable = {
+            if (uiState.isLoading || !uiState.isLoginComplete) {
+                AttendanceShimmerLoading()
+            } else {
+                AttendanceDashboardContent(
+                    currentShift = uiState.currentShift,
+                    selectedTab = selectedTab,
+                    onTabChanged = viewModel::onTabChanged,
+                    onPunchIn = viewModel::startPunchIn,
+                    onPunchOut = viewModel::startPunchOut,
+                    isPunchingIn = uiState.isPunchingIn,
+                    isPunchingOut = uiState.isPunchingOut,
+                    isCheckedIn = uiState.isCheckedIn,
+                    navManager = navManager
+                )
+            }
+        }
     )
 
+}
+
+/**
+ * Request current location & send it to ViewModel
+ */
+private fun requestLocation(
+    context: Context,
+    viewModel: AttendanceDashboardViewModel
+) {
+    val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+
+    try {
+        val cancellationTokenSource = CancellationTokenSource()
+
+        fusedLocationClient.getCurrentLocation(
+            Priority.PRIORITY_HIGH_ACCURACY,
+            cancellationTokenSource.token
+        ).addOnSuccessListener { location ->
+            if (location != null) {
+                Log.d(
+                    "AttendanceScreen",
+                    "Location received: ${location.latitude}, ${location.longitude}"
+                )
+                viewModel.onLocationReceived(location.latitude, location.longitude)
+            } else {
+                viewModel.onLocationError("Unable to get location")
+            }
+        }.addOnFailureListener { exception ->
+            viewModel.onLocationError(exception.message ?: "Location request failed")
+        }
+    } catch (e: SecurityException) {
+        viewModel.onLocationError("Location permission not granted")
+    } catch (e: Exception) {
+        viewModel.onLocationError(e.message ?: "Unknown location error")
+    }
+}
+
+@Composable
+private fun AttendanceShimmerLoading() {
     Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .wrapContentHeight()
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
     ) {
-        // Tab buttons
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+                .height(48.dp)
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            tabs.forEach { (tab, label) ->
-                TextButton(onClick = { onTabSelected(tab) }) {
-                    Text(
-                        text = label,
-                        color = if (selectedTab == tab) textColorActive else textColorInactive,
-                        fontWeight = FontWeight.SemiBold
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .shimmerEffect()
+            )
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .shimmerEffect()
+            )
+        }
+
+        16.0.MOIVerticalSpacer()
+
+        MOICard(
+            cornerSize = CardSize.LARGE,
+            cardContent = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.4f)
+                            .height(20.dp)
+                            .shimmerEffect()
+                    )
+
+                    8.0.MOIVerticalSpacer()
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.6f)
+                            .height(24.dp)
+                            .shimmerEffect()
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.4f)
+                            .height(20.dp)
+                            .shimmerEffect()
+                    )
+
+                    12.0.MOIVerticalSpacer()
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(80.dp)
+                                .shimmerEffect()
+                        )
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(80.dp)
+                                .shimmerEffect()
+                        )
+                    }
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun AttendanceDashboardContent(
+    currentShift: Shift? = null,
+    selectedTab: Int,
+    onTabChanged: (Int) -> Unit,
+    onPunchIn: () -> Unit,
+    onPunchOut: () -> Unit,
+    isPunchingIn: Boolean,
+    isPunchingOut: Boolean,
+    isCheckedIn: Boolean,
+    navManager: NavManager?
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
+    ) {
+        CustomTabRow(
+            selectedTabIndex = selectedTab,
+            tabType = TabType.OUTLINED,
+            backgroundColor = Color.Transparent,
+            indicatorColor = colorResource(R.color.primary_main),
+            tabs = {
+                CustomIndicatorTab(
+                    isSelected = selectedTab == 0,
+                    tabTitle = getMarkAttendanceTitle() ?: "",
+                    tabTitleStyle = Typography().small,
+                    tabSelectedColor = colorResource(R.color.primary_main),
+                    tabUnSelectedColor = colorResource(R.color.white),
+                    onTabClick = { onTabChanged(0) }
+                )
+                CustomIndicatorTab(
+                    isSelected = selectedTab == 1,
+                    tabTitle = getPermissionTitle() ?: "",
+                    tabTitleStyle = Typography().small,
+                    tabSelectedColor = colorResource(R.color.primary_main),
+                    tabUnSelectedColor = colorResource(R.color.white),
+                    onTabClick = {
+                        onTabChanged(1)
+                    }
+                )
+            }
+        )
+
+        16.0.MOIVerticalSpacer()
+
+        PunchInOutCard(
+            shiftTitle = getPunchCardTitle() ?: "",
+            currentShift = currentShift,
+            onPunchIn = onPunchIn,
+            onPunchOut = onPunchOut,
+            isPunchingIn = isPunchingIn,
+            isPunchingOut = isPunchingOut,
+            isCheckedIn = isCheckedIn
+        )
+
+        12.0.MOIVerticalSpacer()
+    }
+}
+
+@Composable
+fun PunchInOutCard(
+    modifier: Modifier = Modifier,
+    shiftTitle: String = "",
+    currentShift: Shift?,
+    onPunchIn: () -> Unit,
+    onPunchOut: () -> Unit,
+    isPunchingIn: Boolean = false,
+    isPunchingOut: Boolean = false,
+    isCheckedIn: Boolean = false
+) {
+    MOICard(
+        cornerSize = CardSize.LARGE,
+        cardContent = {
+            Column(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+
+                Text(
+                    text = shiftTitle,
+                    style = Typography().base.copy(fontWeight = FontWeight.Bold),
+                    color = colorResource(R.color.content_fg_color)
+                )
+
+                Text(
+                    text = currentShift?.shift_name_lang ?: getPunchCardSmallTitle() ?: "",
+                    style = Typography().base.copy(fontWeight = FontWeight.Bold),
+                    color = colorResource(R.color.dark_gray_100)
+                )
+
+                Text(
+                    text = "${currentShift?.shift_rule?.get(0)?.start_time?.toAmPm() ?: "--"}" +
+                            " - ${currentShift?.shift_rule?.get(0)?.end_time?.toAmPm() ?: "--"}",
+                    style = Typography().base.copy(fontWeight = FontWeight.Bold),
+                    color = colorResource(R.color.primary_main)
+                )
+
+                8.0.MOIVerticalSpacer()
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+
+                    val enablePunchIn = !isCheckedIn && !isPunchingOut && !isPunchingIn
+
+                    MOICard(
+                        modifier = Modifier.weight(1f),
+                        cornerSize = CardSize.MEDIUM,
+                        cardColor = colorResource(R.color.green_main),
+                        onCardClicked = {
+                           /* if (enablePunchIn) */onPunchIn()
+                        },
+                        cardContent = {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 16.dp, horizontal = 8.dp)
+                            ) {
+                                CustomIconButton(
+                                    icon = R.drawable.ic_exit_app,
+                                    iconSize = 24,
+                                    tint = Color.White,
+                                    onClick = {
+                                        /*if (enablePunchIn)*/ onPunchIn()
+                                    },
+                                    showContainer = false
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Text(
+                                    text = getPunchInCardTitle() ?: "",
+                                    style = Typography().base.copy(fontWeight = FontWeight.Bold),
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    )
+
+                    // -----------------------------
+                    //  PUNCH OUT BUTTON
+                    // -----------------------------
+                    val enablePunchOut = isCheckedIn && !isPunchingIn && !isPunchingOut
+                    // TODO : Could we add toast on already punch in or punch in first.
+
+                    MOICard(
+                        modifier = Modifier.weight(1f),
+                        cornerSize = CardSize.MEDIUM,
+                        cardColor = colorResource(R.color.primary_main),
+                        onCardClicked = {
+                            /*if (enablePunchOut)*/ onPunchOut()
+                        },
+                        cardContent = {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 16.dp, horizontal = 8.dp)
+                            ) {
+                                CustomIconButton(
+                                    icon = R.drawable.ic_exit_app,
+                                    iconSize = 24,
+                                    tint = Color.White,
+                                    onClick = { /*if (enablePunchOut)*/ onPunchOut() },
+                                    showContainer = false
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = getPunchOutCardTitle() ?: "",
+                                    style = Typography().base.copy(fontWeight = FontWeight.Bold),
+                                    color = Color.White,
+                                    maxLines = 1
+                                )
+                            }
+                        }
                     )
                 }
             }
         }
-
-        // Animated bottom indicator
-        BoxWithConstraints(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(2.dp)
-        ) {
-            val indicatorWidth = maxWidth / tabs.size
-            val indicatorOffset by animateDpAsState(
-                targetValue = when (selectedTab) {
-                    AttendanceTab.MARK_ATTENDANCE -> if (isArabic) indicatorWidth else 0.dp
-                    AttendanceTab.PERMISSION_APPLICATION -> if (isArabic) 0.dp else indicatorWidth
-                },
-                label = "tabIndicatorOffset"
-            )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color.LightGray.copy(alpha = 0.3f))
-            )
-
-            Box(
-                modifier = Modifier
-                    .offset(x = indicatorOffset)
-                    .width(indicatorWidth)
-                    .fillMaxHeight()
-                    .background(textColorActive)
-            )
-        }
-    }
-}
-
-@Composable
-fun MarkAttendanceContent(
-    shift: ShiftData?,
-    onPunchIn: () -> Unit,
-    onPunchOut: () -> Unit,
-    loading: Boolean,
-    isArabic: Boolean
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        shift?.let {
-            ShiftCard(
-                shift = it,
-                onPunchIn = onPunchIn,
-                onPunchOut = onPunchOut,
-                loading = loading,
-                isArabic = isArabic,
-            )
-        }
-    }
-}
-
-@Composable
-fun PermissionApplicationContent(isArabic: Boolean) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = if (isArabic) "طلب استئذان" else "Permission Application",
-            style = MaterialTheme.typography.titleLarge,
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "Light Mode - English")
-@Composable
-private fun PreviewLightEnglish() {
-    AttendanceSystemTheme(false) {
-        AttendanceTabRow(
-            selectedTab = AttendanceTab.MARK_ATTENDANCE,
-            onTabSelected = {},
-            isArabic = false,
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "Dark Mode - English")
-@Composable
-private fun PreviewDarkEnglish() {
-    AttendanceSystemTheme(true) {
-        AttendanceTabRow(
-            selectedTab = AttendanceTab.MARK_ATTENDANCE,
-            onTabSelected = {},
-            isArabic = false,
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "Light Mode - Arabic")
-@Composable
-private fun PreviewLightArabic() {
-    AttendanceSystemTheme(false) {
-        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-            AttendanceTabRow(
-                selectedTab = AttendanceTab.MARK_ATTENDANCE,
-                onTabSelected = {},
-                isArabic = true,
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true, name = "Shimmer - Light")
-@Composable
-private fun PreviewShimmerLight() {
-    AttendanceSystemTheme(false) {
-        AttendanceDashboardShimmer(isRtl = false, isDark = false)
-    }
-}
-
-@Preview(showBackground = true, name = "Shimmer - Dark")
-@Composable
-private fun PreviewShimmerDark() {
-    AttendanceSystemTheme(true) {
-        AttendanceDashboardShimmer(isRtl = false, isDark = true)
-    }
-}
-
-@Preview(showBackground = true, name = "Shimmer - Arabic RTL")
-@Composable
-private fun PreviewShimmerArabic() {
-    AttendanceSystemTheme(false) {
-        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-            AttendanceDashboardShimmer(isRtl = true, isDark = false)
-        }
-    }
+    )
 }

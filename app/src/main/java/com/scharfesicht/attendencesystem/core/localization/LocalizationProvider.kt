@@ -5,7 +5,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
-import com.scharfesicht.attendencesystem.domain.absher.model.AppLanguage
+import com.scharfesicht.attendencesystem.core.utils.AppLanguage
 
 val LocalLanguage = compositionLocalOf { AppLanguage.ENGLISH }
 val LocalStrings = compositionLocalOf { LocalizedStrings(AppLanguage.ENGLISH) }

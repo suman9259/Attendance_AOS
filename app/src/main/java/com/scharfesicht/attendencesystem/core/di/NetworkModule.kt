@@ -2,7 +2,6 @@ package com.scharfesicht.attendencesystem.core.di
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import com.scharfesicht.attendencesystem.core.network.TokenAuthenticator
 import com.scharfesicht.attendencesystem.core.network.interceptor.*
 import com.scharfesicht.attendencesystem.BuildConfig
 import dagger.Module
@@ -108,7 +107,6 @@ object NetworkModule {
         apiLoggerInterceptor: ApiLoggerInterceptor,
         cacheInterceptor: CacheInterceptor,
         rateLimitInterceptor: RateLimitInterceptor,
-        tokenAuthenticator: TokenAuthenticator,
         cache: Cache,
         connectionPool: ConnectionPool
     ): OkHttpClient = OkHttpClient.Builder().apply {
@@ -116,6 +114,7 @@ object NetworkModule {
         addInterceptor(rateLimitInterceptor)
         addInterceptor(authInterceptor)
         addInterceptor(cacheInterceptor)
+        addInterceptor(retryInterceptor)
         cache(cache)
 
         if (BuildConfig.DEBUG) {
@@ -124,16 +123,13 @@ object NetworkModule {
             addInterceptor(apiLoggerInterceptor)
         }
 
-        addNetworkInterceptor(retryInterceptor)
-        authenticator(tokenAuthenticator)
-
         connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
         readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
         writeTimeout(WRITE_TIMEOUT, TimeUnit.SECONDS)
         callTimeout(READ_TIMEOUT + CONNECT_TIMEOUT, TimeUnit.SECONDS)
 
         connectionPool(connectionPool)
-        retryOnConnectionFailure(true)
+        retryOnConnectionFailure(false)
         followRedirects(true)
         followSslRedirects(true)
     }.build()

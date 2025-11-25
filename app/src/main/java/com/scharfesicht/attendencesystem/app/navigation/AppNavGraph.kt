@@ -1,42 +1,97 @@
 package com.scharfesicht.attendencesystem.app.navigation
 
-import androidx.compose.runtime.Composable
+import android.util.Log
+import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.scharfesicht.attendencesystem.features.attendance.presentation.ui.AttendanceDashboardScreen
-import com.scharfesicht.attendencesystem.features.attendance.presentation.ui.AttendanceListScreen
-import com.scharfesicht.attendencesystem.features.attendance.presentation.viewmodel.AbsherViewModel
-import com.scharfesicht.attendencesystem.features.attendance.presentation.viewmodel.AttendanceDashboardViewModel
-import com.scharfesicht.attendencesystem.features.facecompare.presentation.viewmodel.FaceCompareViewModel
+import androidx.navigation.navArgument
+import com.scharfesicht.attendencesystem.core.di.NavManagerEntryPoint
+import com.scharfesicht.attendencesystem.features.attendance.presentation.ui.*
+import com.scharfesicht.attendencesystem.features.attendance.presentation.viewmodel.*
+import dagger.hilt.android.EntryPointAccessors
 
 @Composable
-fun AppNavGraph(
-    isAbsherEnabled: Boolean = false,
-    isLaunchedFromSuperApp: Boolean = false
-) {
+fun AppNavGraph() {
+    val context = LocalContext.current.applicationContext
+    val navManager = remember {
+        EntryPointAccessors.fromApplication(
+            context,
+            NavManagerEntryPoint::class.java
+        ).navManager()
+    }
+
     val navController = rememberNavController()
+
+    // Set NavController in NavManager
+    DisposableEffect(navController) {
+        navManager.setNavController(navController)
+        onDispose {
+            navManager.clearNavController()
+        }
+    }
 
 
     NavHost(
         navController = navController,
-        startDestination = "attendance_dashboard"
+        startDestination = ScreenRoutes.AttendanceDashboard.route
     ) {
-        // Attendance Dashboard Screen
-        composable("attendance_dashboard") {navBackStackEntry ->
-            val absherViewModel: AbsherViewModel = hiltViewModel(navBackStackEntry)
-            val attendanceViewModel: AttendanceDashboardViewModel = hiltViewModel(navBackStackEntry)
-            val faceCompareViewModel: FaceCompareViewModel = hiltViewModel(navBackStackEntry)
-            AttendanceListScreen()
-//            FaceCompareScreen(
-//                oldImageUrl = "https://hrmpro.time-365.com/storage/images/profile/time-365_188264/537304871511132025095607691581079ddb1.jpg",
-//                viewModel = viewModel,
-//
-//
-//            )
+
+        // ========== ATTENDANCE DASHBOARD ==========
+        composable(ScreenRoutes.AttendanceDashboard.route) { navBackStackEntry ->
+            val viewModel: AttendanceDashboardViewModel = hiltViewModel(navBackStackEntry)
+
+            AttendanceDashboardScreen(
+                navManager = navManager,
+                viewModel = viewModel
+            )
         }
 
+        // ========== ATTENDANCE LOGS ==========
+        composable(ScreenRoutes.AttendanceLogs.route) { navBackStackEntry ->
+            val viewModel: AttendanceLogsViewModel = hiltViewModel(navBackStackEntry)
+
+            AttendanceLogsScreen(
+                navManager = navManager,
+                viewModel = viewModel
+            )
+        }
+
+
+        // ========== FACE RECOGNITION SUCCESS ==========
+        composable(
+            route = "${ScreenRoutes.FaceRecognitionSuccess.route}?" +
+                    "${ScreenRoutes.FaceRecognitionSuccess.IS_SUCCESS}={${ScreenRoutes.FaceRecognitionSuccess.IS_SUCCESS}}",
+            arguments = listOf(
+                navArgument(ScreenRoutes.FaceRecognitionSuccess.IS_SUCCESS) {
+                    type = NavType.BoolType
+                    defaultValue = false
+                }
+            )
+        ) { navBackStackEntry ->
+
+            val isSuccess = navBackStackEntry.arguments
+                ?.getBoolean(ScreenRoutes.FaceRecognitionSuccess.IS_SUCCESS) ?: false
+
+            Log.d("AttendanceScreen", "FaceRecognitionSuccess received: $isSuccess")
+
+            FaceRecognitionResultScreen(
+                navManager = navManager,
+                isSuccess = isSuccess
+            )
+        }
+
+        // ========== FACE RECOGNITION FAILED ==========
+//        composable(ScreenRoutes.FaceRecognitionFailed.route) {
+//            FaceNotRecognizedScreen(
+//                onTryAgain = {
+//                    navManager.navigateBack()
+//                }
+//            )
+//        }
 
     }
 }
