@@ -39,7 +39,8 @@ fun AttendanceLogsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val selectedTab by viewModel.selectedTab.collectAsState()
-    val isDarkMode by viewModel.isDarkMode.collectAsState()
+
+    LaunchedEffect(Unit) {viewModel.loadAttendanceLogs()}
 
     MainScreenView(
         uiState = uiState.screenState,  // ALWAYS Success/Success(logs)/Error
@@ -52,7 +53,8 @@ fun AttendanceLogsScreen(
                         painter = painterResource(R.drawable.ic_as_admin),
                         contentDescription = "time attendance"
                     )
-                }
+                },
+                onBackClicked = { navManager.navigateBack() }
             )
         },
         contentPadding = PaddingValues(AppPadding.NON.padding()),
@@ -67,7 +69,6 @@ fun AttendanceLogsScreen(
                     selectedTab = selectedTab,
                     onTabChanged = viewModel::onTabChanged,
                     attendanceLogs = uiState.attendanceLogs,
-                    isDarkMode = isDarkMode
                 )
             }
         }
@@ -193,7 +194,6 @@ private fun AttendanceLogsContent(
     selectedTab: Int,
     onTabChanged: (Int) -> Unit,
     attendanceLogs: List<AttendanceLog>?,
-    isDarkMode: Boolean
 ) {
     Column(
         modifier = Modifier

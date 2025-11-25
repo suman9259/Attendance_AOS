@@ -145,11 +145,18 @@ class MiniAppEntryPoint : IMiniApp {
                 en = { AbsherResponse(success = true, data = "Try again", message = null) }
             )
 
-        fun getSuccessfullyPunchedInText(): String? =
-            getLocalizedValue(
-                ar = { AbsherResponse(success = true, data = "تم تسجيل الدخول بنجاح", message = null) },
-                en = { AbsherResponse(success = true, data = "Successfully punched in", message = null) }
-            )
+        fun getSuccessfullyPunchedText(isIn: Boolean): String? =
+            if (isIn) {
+                getLocalizedValue(
+                    ar = { AbsherResponse(success = true, data = "تم تسجيل الدخول بنجاح", message = null) },
+                    en = { AbsherResponse(success = true, data = "Successfully punched in", message = null) }
+                )
+            } else {
+                getLocalizedValue(
+                    ar = { AbsherResponse(success = true, data = "تم تسجيل الخروج بنجاح", message = null) },
+                    en = { AbsherResponse(success = true, data = "Successfully punched out", message = null) }
+                )
+            }
 
 
 

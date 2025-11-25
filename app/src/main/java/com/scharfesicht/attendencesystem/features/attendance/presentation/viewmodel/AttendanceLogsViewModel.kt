@@ -44,30 +44,7 @@ class AttendanceLogsViewModel @Inject constructor(
     private val _selectedTab = MutableStateFlow(0)
     val selectedTab: StateFlow<Int> = _selectedTab.asStateFlow()
 
-    private val _isDarkMode = MutableStateFlow(false)
-    val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
-
     private var loadJob: Job? = null
-
-    init {
-        loadUserTheme()
-        loadAttendanceLogs()
-    }
-
-    // ----------------------------------------------------
-    // LOAD THEME
-    // ----------------------------------------------------
-    private fun loadUserTheme() {
-        viewModelScope.launch {
-            runCatching {
-                MiniAppEntryPoint.superData?.getCurrentTheme()?.data?.let { theme ->
-                    _isDarkMode.value = theme == "dark"
-                }
-            }.onFailure {
-                Log.e(TAG, "Theme load failed", it)
-            }
-        }
-    }
 
     // ----------------------------------------------------
     // MAIN: LOAD ATTENDANCE LOGS WITH SHIMMER

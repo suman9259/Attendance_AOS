@@ -64,9 +64,14 @@ fun AppNavGraph() {
         // ========== FACE RECOGNITION SUCCESS ==========
         composable(
             route = "${ScreenRoutes.FaceRecognitionSuccess.route}?" +
-                    "${ScreenRoutes.FaceRecognitionSuccess.IS_SUCCESS}={${ScreenRoutes.FaceRecognitionSuccess.IS_SUCCESS}}",
+                    "${ScreenRoutes.FaceRecognitionSuccess.IS_SUCCESS}={${ScreenRoutes.FaceRecognitionSuccess.IS_SUCCESS}}" +
+                    "&${ScreenRoutes.FaceRecognitionSuccess.IS_IN}={${ScreenRoutes.FaceRecognitionSuccess.IS_IN}}",
             arguments = listOf(
                 navArgument(ScreenRoutes.FaceRecognitionSuccess.IS_SUCCESS) {
+                    type = NavType.BoolType
+                    defaultValue = false
+                },
+                navArgument(ScreenRoutes.FaceRecognitionSuccess.IS_IN) {
                     type = NavType.BoolType
                     defaultValue = false
                 }
@@ -76,22 +81,17 @@ fun AppNavGraph() {
             val isSuccess = navBackStackEntry.arguments
                 ?.getBoolean(ScreenRoutes.FaceRecognitionSuccess.IS_SUCCESS) ?: false
 
-            Log.d("AttendanceScreen", "FaceRecognitionSuccess received: $isSuccess")
+            val isIn = navBackStackEntry.arguments
+                ?.getBoolean(ScreenRoutes.FaceRecognitionSuccess.IS_IN) ?: false
+
+            Log.d("AttendanceScreen", "FaceRecognitionSuccess received: success=$isSuccess, isIn=$isIn")
 
             FaceRecognitionResultScreen(
                 navManager = navManager,
-                isSuccess = isSuccess
+                isSuccess = isSuccess,
+                isIn = isIn
             )
         }
-
-        // ========== FACE RECOGNITION FAILED ==========
-//        composable(ScreenRoutes.FaceRecognitionFailed.route) {
-//            FaceNotRecognizedScreen(
-//                onTryAgain = {
-//                    navManager.navigateBack()
-//                }
-//            )
-//        }
 
     }
 }

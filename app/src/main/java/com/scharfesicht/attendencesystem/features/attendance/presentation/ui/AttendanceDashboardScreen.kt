@@ -61,7 +61,6 @@ fun AttendanceDashboardScreen(
     val selectedTab by viewModel.selectedTab.collectAsState()
     val flowState by viewModel.flowState.collectAsState()
     val toastMessage by viewModel.toast.collectAsState(initial = null)
-    val navigationEvent = viewModel.navigationEvent.collectAsState(initial = null)
 
 
 
@@ -113,13 +112,10 @@ fun AttendanceDashboardScreen(
     LaunchedEffect(Unit) {
         viewModel.navigationEvent.collect { event ->
             when (event) {
-
                 is AttendanceDashboardViewModel.AttendanceNavigationEvent.FaceRecognitionSuccess -> {
-
                     navManager.navigate(
-                        ScreenRoutes.FaceRecognitionSuccess.createRoute(event.isSuccess)
+                        ScreenRoutes.FaceRecognitionSuccess.createRoute(isSuccess = event.isSuccess, isIn = event.isIn)
                     )
-
                     Log.d("AttendanceScreen", "Navigating to FaceRecognitionSuccess with = ${event.isSuccess}")
                 }
             }
@@ -176,7 +172,8 @@ fun AttendanceDashboardScreen(
                         painter = painterResource(R.drawable.ic_as_admin),
                         contentDescription = "time attendance"
                     )
-                }
+                },
+                onBackClicked = {navManager.navigateBack()}
             )
         },
         contentPadding = PaddingValues(AppPadding.NON.padding()),
@@ -430,7 +427,7 @@ fun PunchInOutCard(
                 )
 
                 Text(
-                    text = currentShift?.shift_name_lang ?: getPunchCardSmallTitle() ?: "",
+                    text = currentShift?.shift_type_name ?: getPunchCardSmallTitle() ?: "",
                     style = Typography().base.copy(fontWeight = FontWeight.Bold),
                     color = colorResource(R.color.dark_gray_100)
                 )

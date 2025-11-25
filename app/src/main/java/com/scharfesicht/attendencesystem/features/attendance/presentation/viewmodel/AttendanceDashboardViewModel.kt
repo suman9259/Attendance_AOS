@@ -115,7 +115,7 @@ class AttendanceDashboardViewModel @Inject constructor(
     val navigationEvent = _navigationEvent.asSharedFlow()
 
     sealed class AttendanceNavigationEvent {
-        data class FaceRecognitionSuccess(val isSuccess: Boolean) : AttendanceNavigationEvent()
+        data class FaceRecognitionSuccess(val isSuccess: Boolean, val isIn: Boolean) : AttendanceNavigationEvent()
 
     }
 
@@ -435,16 +435,17 @@ class AttendanceDashboardViewModel @Inject constructor(
                     when (result) {
                         is NetworkResult.Success -> {
                             try {
-                                val records = result.data
-                                val latestRecord = records.firstOrNull()
+                                // TODO: Uncomment when we need all latest records.
+//                                val records = result.data
+//                                val latestRecord = records.firstOrNull()
+//
+//                                val isCheckedIn = latestRecord?.checkout_time == null &&
+//                                        latestRecord?.checkin_time != null
+//
+//                                preferenceStorage.setCheckedIn(isCheckedIn)
+//                                _uiState.update { it.copy(isCheckedIn = isCheckedIn) }
 
-                                val isCheckedIn = latestRecord?.checkout_time == null &&
-                                        latestRecord?.checkin_time != null
-
-                                preferenceStorage.setCheckedIn(isCheckedIn)
-                                _uiState.update { it.copy(isCheckedIn = isCheckedIn) }
-
-                                Log.d(TAG, "Attendance status: checkedIn=$isCheckedIn")
+//                                Log.d(TAG, "Attendance status: checkedIn=$isCheckedIn")
                             } catch (e: Exception) {
                                 Log.e(TAG, "Error processing attendance records", e)
                             }
@@ -615,49 +616,66 @@ class AttendanceDashboardViewModel @Inject constructor(
 
         return when (type) {
             PunchType.IN -> {
-                if (shiftStartTime == null) {
-                    showError("Invalid shift start time. Please contact your administrator.")
-                    false
-                } else {
-                    val timeDifferenceMinutes =
-                        calculateTimeDifferenceMinutes(currentTime, shiftStartTime)
-                    val gracePeriodMinutes = shiftRule.grace_period_in.toIntOrNull() ?: 10
 
-                    Log.d(
-                        TAG,
-                        "Time validation: current vs shift = $timeDifferenceMinutes minutes, grace period = $gracePeriodMinutes minutes"
-                    )
-
-                    if (timeDifferenceMinutes < -gracePeriodMinutes) {
-                        val minutesUntilAllowed = abs(timeDifferenceMinutes) - gracePeriodMinutes
-                        showError(
-                            "Too early to punch in.\n" +
-                                    "You can punch in after $minutesUntilAllowed minutes.\n" +
-                                    "Shift starts at: ${shiftRule.start_time}"
-                        )
-                        false
-                    } else {
-                        if (timeDifferenceMinutes > MAX_LATE_MINUTES_WARNING) {
-                            showWarning(
-                                "You are ${timeDifferenceMinutes} minutes late.\n" +
-                                        "Please contact your supervisor if needed."
-                            )
-                        }
-                        true
-                    }
+                if (shiftStartTime == null || shiftEndTime == null) {
+                    showError("Invalid shift timings. Please contact your administrator.")
+                    return false
                 }
+
+                val diffFromStart = calculateTimeDifferenceMinutes(currentTime, shiftStartTime)
+                val diffFromEnd   = calculateTimeDifferenceMinutes(currentTime, shiftEndTime)
+                val gracePeriodMinutes = shiftRule.grace_period_in.toIntOrNull() ?: 10
+
+
+                // -----------------------------------------------------
+                // 1️⃣ NEW RULE: User tries to punch in after shift end
+                // -----------------------------------------------------
+                if (diffFromEnd > 0) {
+                    showError(
+                        "You can't punch in, shift is over.\n" +
+                                "Shift ended at: ${shiftRule.end_time}"
+                    )
+                    return false
+                }
+
+                Log.d(TAG, "Punch-In Time Check → FromStart=$diffFromStart min, FromEnd=$diffFromEnd min")
+
+                // -----------------------------------------------------
+                // 2️⃣ Too early punch-in
+                // -----------------------------------------------------
+                if (diffFromStart < -gracePeriodMinutes) {
+                    val minutesUntilAllowed = abs(diffFromStart) - gracePeriodMinutes
+                    showError(
+                        "Too early to punch in.\n" +
+                                "You can punch in after $minutesUntilAllowed minutes.\n" +
+                                "Shift starts at: ${shiftRule.start_time}"
+                    )
+                    return false
+                }
+
+                // -----------------------------------------------------
+                // 3️⃣ Late punch-in warning only
+                // -----------------------------------------------------
+                if (diffFromStart > MAX_LATE_MINUTES_WARNING) {
+                    showWarning(
+                        "You are ${diffFromStart} minutes late.\n" +
+                                "Please contact your supervisor if needed."
+                    )
+                }
+
+                true
             }
 
             PunchType.OUT -> {
+
                 if (shiftEndTime != null) {
-                    val timeDifferenceMinutes =
-                        calculateTimeDifferenceMinutes(currentTime, shiftEndTime)
-                    if (timeDifferenceMinutes < 0) {
-                        val minutesEarly = abs(timeDifferenceMinutes)
+                    val diff = calculateTimeDifferenceMinutes(currentTime, shiftEndTime)
+
+                    if (diff < 0) {
+                        val minutesEarly = abs(diff)
                         showWarning(
                             "You are punching out $minutesEarly minutes early.\n" +
-                                    "Shift ends at: ${shiftRule.end_time}\n" +
-                                    "Your supervisor will be notified."
+                                    "Shift ends at: ${shiftRule.end_time}"
                         )
                     }
                 }
@@ -752,7 +770,7 @@ class AttendanceDashboardViewModel @Inject constructor(
                     if (!faceResult.isSame || faceResult.accuracy < FACE_MATCH_THRESHOLD) {
                         viewModelScope.launch {
                             _navigationEvent.emit(
-                                AttendanceNavigationEvent.FaceRecognitionSuccess(false)
+                                AttendanceNavigationEvent.FaceRecognitionSuccess(isSuccess = false, isIn = false)
                             )
                         }
                         resetFlow()
@@ -844,7 +862,7 @@ class AttendanceDashboardViewModel @Inject constructor(
 
                 viewModelScope.launch {
                     _navigationEvent.emit(
-                        AttendanceNavigationEvent.FaceRecognitionSuccess(true)
+                        AttendanceNavigationEvent.FaceRecognitionSuccess(isSuccess = true, isIn = isIn)
                     )
                 }
                 _uiState.update {
@@ -863,7 +881,7 @@ class AttendanceDashboardViewModel @Inject constructor(
             is NetworkResult.Error -> {
                 viewModelScope.launch {
                     _navigationEvent.emit(
-                        AttendanceNavigationEvent.FaceRecognitionSuccess(false)
+                        AttendanceNavigationEvent.FaceRecognitionSuccess(isSuccess = false, isIn = isIn)
                     )
                 }
                 showError(result.error.message ?: "Punch operation failed")
