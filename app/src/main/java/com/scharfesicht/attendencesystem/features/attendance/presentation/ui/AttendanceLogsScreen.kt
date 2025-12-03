@@ -1,6 +1,8 @@
 package com.scharfesicht.attendencesystem.features.attendance.presentation.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
@@ -13,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint
 import com.scharfesicht.attendencesystem.app.MiniAppEntryPoint.Companion.getDateText
@@ -144,7 +147,7 @@ private fun AttendanceLogsShimmer() {
 private fun AttendanceLogItemShimmer() {
     MOICard(
         cornerSize = CardSize.MEDIUM,
-        padding = PaddingValues(12.dp),
+        padding = PaddingValues(10.dp),
         cardContent = {
 
             Row(
@@ -156,7 +159,7 @@ private fun AttendanceLogItemShimmer() {
                 // Date card shimmer
                 Box(
                     modifier = Modifier
-                        .weight(1.2f)
+                        .weight(1f)
                         .height(60.dp)
                         .shimmerEffect()
                 )
@@ -262,32 +265,36 @@ private fun AttendanceTableHeader() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 12.dp),
+            .padding(horizontal = 1.dp, vertical = 5.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
             text = getDateText() ?: "",
-            modifier = Modifier.weight(1.2f),
+            modifier = Modifier.weight(0.8f),
             style = Typography().small.copy(fontWeight = FontWeight.Bold),
-            color = colorResource(R.color.content_fg_color)
+            color = colorResource(R.color.content_fg_color),
+            textAlign = TextAlign.Center
         )
         Text(
             text = getPunchInCardTitle() ?: "",
             modifier = Modifier.weight(1f),
             style = Typography().small.copy(fontWeight = FontWeight.Bold),
-            color = colorResource(R.color.content_fg_color)
+            color = colorResource(R.color.content_fg_color),
+            textAlign = TextAlign.Center
         )
         Text(
             text = getPunchOutCardTitle() ?: "",
             modifier = Modifier.weight(1f),
             style = Typography().small.copy(fontWeight = FontWeight.Bold),
-            color = colorResource(R.color.content_fg_color)
+            color = colorResource(R.color.content_fg_color),
+            textAlign = TextAlign.Center
         )
         Text(
             text = getWorkingHoursTitle() ?: "",
             modifier = Modifier.weight(1f),
             style = Typography().small.copy(fontWeight = FontWeight.Bold),
-            color = colorResource(R.color.content_fg_color)
+            color = colorResource(R.color.content_fg_color),
+            textAlign = TextAlign.Center
         )
     }
 }
@@ -304,7 +311,7 @@ private fun AttendanceLogItem(log: AttendanceLog) {
 
     MOICard(
         cornerSize = CardSize.MEDIUM,
-        padding = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
+        padding = PaddingValues(vertical = 3.dp),
         cardContent = {
 
             Row(
@@ -315,25 +322,27 @@ private fun AttendanceLogItem(log: AttendanceLog) {
 
                 // Date Card
                 MOICard(
+                    modifier = Modifier.weight(1f),
                     cornerSize = CardSize.LARGE,
-                    modifier = Modifier.weight(1.2f),
-                    padding = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
+                    padding = PaddingValues(10.dp),
                     cardColor = statusColor,
                     cardContent = {
                         Column(
-                            Modifier.padding(10.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            Modifier.fillMaxSize().padding(10.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
                         ) {
                             Text(
                                 text = log.dayName,
-                                style = Typography().xSmall.copy(fontWeight = FontWeight.Bold),
+                                style = Typography().small.copy(fontWeight = FontWeight.Bold),
                                 color = Color.White
                             )
+                            2.0.MOIVerticalSpacer()
                             Text(
-                                modifier = Modifier.padding(top = 4.dp),
                                 text = log.dayNumber,
                                 style = Typography().base.copy(fontWeight = FontWeight.Bold),
-                                color = Color.White
+                                color = Color.White,
+                                textAlign = TextAlign.Center
                             )
                         }
                     }
@@ -344,7 +353,7 @@ private fun AttendanceLogItem(log: AttendanceLog) {
                 // Punch In
                 Row(
                     modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(5.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (log.punchInTime.isNotEmpty()) {
@@ -369,7 +378,7 @@ private fun AttendanceLogItem(log: AttendanceLog) {
                 // Punch Out
                 Row(
                     modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(5.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (log.punchOutTime.isNotEmpty()) {

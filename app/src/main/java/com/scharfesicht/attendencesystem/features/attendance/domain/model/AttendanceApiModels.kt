@@ -49,7 +49,7 @@ data class LoginData(
     val custom_id: String = "",
     val civil_id: String = "",
     val username: String = "",
-    val email: String = "",
+    val email: String? = "",
     val face_recognition: Int = 0,
     val is_notification: Int = 0,
     val is_google2fa: Int = 0,
@@ -65,7 +65,7 @@ data class LoginData(
     val jobTitleType: JobTitleType? = null,
     val managers: Any? = null, // Ignored - can be array or object
     val department: Department? = null,
-    val shifts: List<Shift> = emptyList(),
+    val shifts: List<Shift>? = emptyList(),
     val wifi: List<Wifi> = emptyList(),
     val qr: Any? = null, // Ignored - can be string, array, or object
     val becons: List<Beacon> = emptyList(),
@@ -240,11 +240,11 @@ data class UserProfile(
 fun LoginData.toUserProfile() = UserProfile(
     uuid = uuid,
     username = username,
-    email = email,
+    email = email?: "",
     fullName = full_name,
     profileImage = profile_image,
     department = department?.department_name_lang,
-    shifts = shifts
+    shifts = shifts.orEmpty()
 )
 sealed class PunchFlowState {
     object Idle : PunchFlowState()

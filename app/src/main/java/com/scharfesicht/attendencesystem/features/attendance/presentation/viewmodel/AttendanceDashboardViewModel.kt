@@ -332,13 +332,13 @@ class AttendanceDashboardViewModel @Inject constructor(
                                     saveLoginData(loginData)
                                 }
 
-                                val currentShift = loginData.shifts.firstOrNull()
+                                val currentShift = loginData.shifts?.firstOrNull()
                                 val zone = loginData.zones.firstOrNull()
 
                                 _uiState.update {
                                     it.copy(
                                         currentShift = currentShift,
-                                        allShifts = loginData.shifts,
+                                        allShifts = loginData.shifts.orEmpty(),
                                         profileImageUrl = loginData.profile_image,
                                         userName = loginData.full_name,
                                         expectedLatitude = safeParseDouble(zone?.zone_latitude, 0.0, "zone latitude"),

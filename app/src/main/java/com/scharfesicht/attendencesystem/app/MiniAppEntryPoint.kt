@@ -129,8 +129,8 @@ class MiniAppEntryPoint : IMiniApp {
 
         fun getWorkingHoursTitle(): String? =
             getLocalizedValue(
-                ar = { AbsherResponse(success = true, data = "دوام ثابت", message = null) },
-                en = { AbsherResponse(success = true, data = "Standard Shift", message = null) }
+                ar = { AbsherResponse(success = true, data = "ساعات العمل", message = null) },
+                en = { AbsherResponse(success = true, data = "Working Hours", message = null) }
             )
 
         fun getFaceNotRecognizedText(): String? =
