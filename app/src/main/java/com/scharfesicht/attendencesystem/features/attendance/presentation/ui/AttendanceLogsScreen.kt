@@ -51,6 +51,7 @@ fun AttendanceLogsScreen(
             AbsherAppBar(
                 showEventTheme = false,
                 title = MiniAppEntryPoint.getServiceTitle(),
+                // TODO: App Top bar title for language.
                 generalIcon = {
                     Icon(
                         painter = painterResource(R.drawable.ic_as_admin),

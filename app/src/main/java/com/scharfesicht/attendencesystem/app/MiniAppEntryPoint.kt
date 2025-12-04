@@ -48,6 +48,7 @@ class MiniAppEntryPoint : IMiniApp {
         // ----------------------------------------------------------
         // Arabic / English Localized Functions
         // ----------------------------------------------------------
+        // TODO: We neen header text in both language.
 
         fun getServiceTitle(): String? = getLocalizedValue(
             ar = { superData?.getServiceTitleAr() ?: emptyFail() },
@@ -247,7 +248,7 @@ class MiniAppEntryPoint : IMiniApp {
         fun getCameraImage(): String? =
             //TODO: This method is not working. Need to fix it.
             safe { superData?.getImageFromCamera() }
-
+            // TODO: Camera, Gallery and all the other system sdk is not working.
         fun getGalleryImage(): String? =
             safe { superData?.getImageFromGallery() }
 

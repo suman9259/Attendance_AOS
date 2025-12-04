@@ -175,6 +175,7 @@ fun AttendanceDashboardScreen(
                 },
                 onBackClicked = {navManager.navigateBack()}
             )
+            // TODO: I I am using  multiple language then we need all error's in all language
         },
         contentPadding = PaddingValues(AppPadding.NON.padding()),
 
@@ -208,8 +209,7 @@ fun AttendanceDashboardScreen(
                     onPunchOut = viewModel::startPunchOut,
                     isPunchingIn = uiState.isPunchingIn,
                     isPunchingOut = uiState.isPunchingOut,
-                    isCheckedIn = uiState.isCheckedIn,
-                    navManager = navManager
+                    isCheckedIn = uiState.isCheckedIn
                 )
             }
         }
@@ -349,7 +349,6 @@ private fun AttendanceDashboardContent(
     isPunchingIn: Boolean,
     isPunchingOut: Boolean,
     isCheckedIn: Boolean,
-    navManager: NavManager?
 ) {
     Column(
         modifier = Modifier
